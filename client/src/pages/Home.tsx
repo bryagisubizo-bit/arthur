@@ -12,6 +12,7 @@ import {
   CircleGauge,
   CircleHelp,
   Command,
+  Crosshair,
   Cpu,
   Database,
   Fingerprint,
@@ -41,7 +42,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type Section = "command" | "voice" | "api" | "permissions" | "updates";
+type Section = "command" | "voice" | "persona" | "api" | "permissions" | "updates";
 type ProviderCard = [string, string, string, string];
 
 const heroImage = "/manus-storage/arthur-hero-atmosphere_eca500cb.png";
@@ -63,6 +64,7 @@ const providerCards: ProviderCard[] = [
 const nav = [
   ["command", Command, "Command desk"],
   ["voice", AudioLines, "Voice studio"],
+  ["persona", Bot, "Conduct & memory"],
   ["api", KeyRound, "API vault"],
   ["permissions", ShieldCheck, "Permissions"],
   ["updates", UploadCloud, "Updates"],
@@ -128,6 +130,31 @@ function WakeWordModal({ close }: { close: () => void }) {
   return <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="openWakeWord setup"><div className="setup-modal wakeword-modal"><button className="icon-button close-modal" onClick={close} aria-label="Close wake word setup"><X size={18} /></button><div className="eyebrow">Local wake word / consent gate</div><h2>Install listening only with approval.</h2><p className="muted-copy">Arthur should ask before the Windows desktop app opens Command Prompt and installs the optional local listener.</p><div className="command-preview"><TerminalSquare size={18} /><code>pip install openwakeword</code></div><label className="check-row wakeword-consent"><input type="checkbox" checked={approved} onChange={(event) => setApproved(event.target.checked)} /><span><b>I approve this optional installation.</b><small>The desktop installer may open Command Prompt and run the shown command only after this box is selected.</small></span></label><label className="check-row tray-toggle"><input type="checkbox" checked={trayListening} onChange={(event) => setTrayListening(event.target.checked)} /><span><b>Keep listening when the main window is closed.</b><small>Closing Arthur hides it to the Windows system tray. Choosing “Exit Arthur,” pausing listening, signing out, or shutting down stops the listener.</small></span></label><div className="wakeword-note"><Activity size={20} /><p><b>Accuracy is calibrated, not guaranteed.</b> Arthur should provide a five-call microphone check, noise-level indicator, sensitivity control, and a visible listening state before background listening is enabled.</p></div><div className="modal-actions"><button className="text-button" onClick={close}>Not now</button><button className="primary-button" onClick={requestInstall}>Approve installation <ShieldCheck size={16} /></button></div></div></div>;
 }
 
+function ApiGuideModal({ close }: { close: () => void }) {
+  const providers = [
+    ["OpenAI", "Conversation, research, and voice", "Create a project key in the OpenAI API-key dashboard.", "https://platform.openai.com/api-keys"],
+    ["Anthropic", "Optional reasoning checks", "Create a key in Claude Console Account Settings.", "https://platform.claude.com/settings/keys"],
+    ["Supabase", "Browser accounts and profile sync", "Copy the Project URL and Publishable Key from the project Connect dialog.", "https://supabase.com/dashboard/project/_?showConnect=true"],
+    ["Home Assistant", "Optional authorized smart-home control", "An authorized home owner creates a Long-Lived Access Token in User Profile → Security.", "https://my.home-assistant.io/redirect/profile_security"],
+  ];
+  return <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Arthur developer API acquisition guide"><div className="setup-modal api-guide-modal"><button className="icon-button close-modal" onClick={close} aria-label="Close API guide"><X size={18} /></button><div className="eyebrow">Developer API vault / acquisition guide</div><h2>Obtain keys from the provider, then keep them contained.</h2><p className="muted-copy">Use regenerated developer credentials only. Arthur’s production architecture keeps provider secrets on a protected backend; browser and desktop clients never receive server-only credentials.</p><div className="api-guide-list">{providers.map(([provider, purpose, instruction, href]) => <article className="api-guide-row" key={provider}><span className="provider-icon"><KeyRound size={16} /></span><div><b>{provider}</b><small>{purpose}</small><p>{instruction}</p></div><a className="outline-button" href={href} target="_blank" rel="noreferrer">Open provider <ArrowUpRight size={14} /></a></article>)}</div><div className="safety-note"><ShieldCheck size={20} /><p><b>Never enter:</b> a PostgreSQL connection string, database password, Supabase Secret/Service Role key, or any server credential in a distributed desktop app.</p></div><div className="modal-actions"><button className="primary-button" onClick={close}>Understood <ShieldCheck size={16} /></button></div></div></div>;
+}
+
+function PersonaPanel({ demeanor, learning, toggleDemeanor, toggleLearning, openPermissions }: { demeanor: { polite: boolean; wit: boolean; candor: boolean; calm: boolean }; learning: { routines: boolean; phrasing: boolean; schedule: boolean }; toggleDemeanor: (key: "polite" | "wit" | "candor" | "calm") => void; toggleLearning: (key: "routines" | "phrasing" | "schedule") => void; openPermissions: () => void }) {
+  const demeanorRows = [
+    ["polite", "Formal regard", "Uses your selected title and a refined, respectful register."],
+    ["wit", "Dry British wit", "Offers restrained, situational humour—never at the user’s expense."],
+    ["candor", "Radical candour", "States risks, conflicts, and productivity bottlenecks plainly."],
+    ["calm", "Calm under pressure", "Keeps a measured voice during alerts, heavy load, or urgent tasks."],
+  ] as const;
+  const learningRows = [
+    ["routines", "Routine signals", "Learns opted-in focus hours and common workspaces."],
+    ["phrasing", "Language & sayings", "Retains approved phrasing, pronunciation notes, and cultural preferences."],
+    ["schedule", "Schedule anticipation", "May prepare reminders from authorised calendar data."],
+  ] as const;
+  return <section className="persona-layout"><header className="persona-hero"><div><span className="eyebrow">Arthur conduct protocol</span><h2>Level voice. Clear judgement. Your terms.</h2><p>Arthur can be formal, composed, candid, and dryly funny without becoming hostile, manipulative, or presumptuous.</p></div><div className="persona-seal"><span className="orbit-seal"><Bot size={23} /></span><span>GUARDED<br/>LOYALTY</span></div></header><div className="persona-grid"><section className="persona-panel"><div className="section-heading"><div><span className="eyebrow">Demeanor matrix</span><h3>How Arthur speaks</h3></div><Settings2 size={18} /></div>{demeanorRows.map(([id, label, detail]) => <article className="protocol-row" key={id}><span className="protocol-icon"><Bot size={17} /></span><div><b>{label}</b><small>{detail}</small></div><button aria-pressed={demeanor[id]} className={`switch ${demeanor[id] ? "on" : ""}`} onClick={() => toggleDemeanor(id)}><span /></button></article>)}</section><section className="persona-panel learning-panel"><div className="section-heading"><div><span className="eyebrow">Learning ledger</span><h3>Adaptive by permission</h3></div><Fingerprint size={18} /></div>{learningRows.map(([id, label, detail]) => <article className="protocol-row" key={id}><span className="protocol-icon"><FolderCog size={17} /></span><div><b>{label}</b><small>{detail}</small></div><button aria-pressed={learning[id]} className={`switch ${learning[id] ? "on" : ""}`} onClick={() => toggleLearning(id)}><span /></button></article>)}<div className="ledger-rule"><ShieldCheck size={18} /><span>Every learned item remains reviewable, editable, exportable, and erasable by its owner.</span></div></section></div><section className="holo-workspace"><div className="holo-copy"><span className="eyebrow">Holographic data workspace</span><h2>Organise evidence, not mysteries.</h2><p>Arthur may cross-reference documents, approved research, calendar context, and local telemetry to prepare a spoken brief. It does not silently upload private files or access systems you have not authorized.</p><div className="holo-actions"><button className="primary-button" onClick={() => toast("Arthur would ask you to select approved sources before creating a research workspace.")}>Prepare research lens <Search size={16} /></button><button className="outline-button" onClick={openPermissions}>Inspect consent scope <ShieldCheck size={16} /></button></div></div><div className="holo-stage" aria-label="Illustrative holographic data workspace"><div className="holo-plane plane-one" /><div className="holo-plane plane-two" /><div className="holo-core"><Crosshair aria-hidden="true" size={28} /><b>AUTHORISE</b><small>scope / sources / output</small></div><div className="holo-readout readout-one">FILES / SELECTED</div><div className="holo-readout readout-two">SOURCES / VERIFIED</div><div className="holo-readout readout-three">OUTPUT / SPOKEN</div></div></section><section className="protective-grid"><article><StatusPill tone="amber">Attention</StatusPill><b>Calendar collision</b><p>Arthur can identify a conflict and propose options. It never moves meetings without approval.</p></article><article><StatusPill tone="green">Healthy</StatusPill><b>Workstation guard</b><p>Arthur can watch authorised system signals, explain bottlenecks, and ask before changing performance settings.</p></article><article><StatusPill tone="blue">Private by default</StatusPill><b>Research boundary</b><p>Arthur can summarize approved information sources but refuses unauthorized access and security bypass requests.</p></article></section></section>;
+}
+
 export default function Home() {
   const [section, setSection] = useState<Section>("command");
   const [setupOpen, setSetupOpen] = useState(false);
@@ -141,6 +168,9 @@ export default function Home() {
   const [customIntegrations, setCustomIntegrations] = useState<ProviderCard[]>([]);
   const [integrationOpen, setIntegrationOpen] = useState(false);
   const [wakeWordOpen, setWakeWordOpen] = useState(false);
+  const [apiGuideOpen, setApiGuideOpen] = useState(false);
+  const [demeanor, setDemeanor] = useState({ polite: true, wit: true, candor: true, calm: true });
+  const [learning, setLearning] = useState({ routines: true, phrasing: true, schedule: false });
   const greeting = useMemo(() => `At your signal, ${title}.`, [title]);
 
   const runCommand = () => {
@@ -163,8 +193,10 @@ export default function Home() {
         <div className="rail-bottom"><div className="rail-profile"><span className="profile-avatar">{name.slice(0, 1).toUpperCase()}</span><div><b>{name}</b><small>{language}</small></div><ChevronRight size={16} /></div><button className="nav-item ghost" onClick={() => toast("Preview system notes", { description: "The production desktop app keeps diagnostics local unless you explicitly choose to share them." })}><CircleHelp size={18} /><span>System notes</span></button></div>
       </aside>
 
-      <section className="command-canvas">
-        <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "voice" ? "Voice studio" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
+      <section className={`command-canvas ${section === "persona" ? "persona-active" : ""}`}>
+        {section === "persona" && <PersonaPanel demeanor={demeanor} learning={learning} toggleDemeanor={(key) => setDemeanor((current) => ({ ...current, [key]: !current[key] }))} toggleLearning={(key) => setLearning((current) => ({ ...current, [key]: !current[key] }))} openPermissions={() => setSection("permissions")} />}
+        {section === "api" && <button className="api-guide-fab" onClick={() => setApiGuideOpen(true)}><KeyRound size={15} /> Where do I get keys?</button>}
+        <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
 
         {section === "command" && <>
           <section className="hero-command" style={{ backgroundImage: `linear-gradient(90deg, rgba(5, 11, 24, .95) 18%, rgba(5,11,24,.42) 72%, rgba(5,11,24,.86)), url(${heroImage})` }}>
@@ -189,6 +221,7 @@ export default function Home() {
       {setupOpen && <SetupModal close={() => setSetupOpen(false)} save={saveProfile} />}
       {integrationOpen && <IntegrationModal close={() => setIntegrationOpen(false)} save={(card) => setCustomIntegrations((current) => [...current, card])} />}
       {wakeWordOpen && <WakeWordModal close={() => setWakeWordOpen(false)} />}
+      {apiGuideOpen && <ApiGuideModal close={() => setApiGuideOpen(false)} />}
     </main>
   );
 }
