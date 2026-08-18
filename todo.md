@@ -23,3 +23,12 @@
 - [x] Add safe command-palette preview controls, execution history, and an emergency pause for automation.
 - [x] Extend the Windows prototype with a non-executing command planner and risk-classification module.
 - [x] Verify that command planning never enables unauthorized access, destructive actions without confirmation, or unrestricted shell execution.
+
+## Advanced PC-Assistant Prompt Audit
+
+- [x] Complete the 1,616-line prompt audit and classify items as already delivered, missing, provider-dependent, or excluded.
+- [x] Add a visible tool-routing workspace that distinguishes conversation, approved PC control, file operations, web research, vision, automations, and permission-sensitive actions.
+- [x] Add missing voice, microphone, screen/file-analysis, and application-management configuration controls as safe provider-dependent placeholders.
+- [x] Add a transparent automation registry with trigger, owner, permission, pause, and audit metadata.
+- [x] Extend the feature audit with the precise implementation status and safety boundary for every prompt category.
+- [x] Verify the improved preview and rebuild the secret-free Windows source bundle.

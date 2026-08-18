@@ -2,6 +2,8 @@
  * Orbital Command Atelier: asymmetric command canvas, cobalt instrumentation, and explicit consent states.
  */
 import { useMemo, useState } from "react";
+import ToolsPanel from "@/components/ToolsPanel";
+import VoiceControls from "@/components/VoiceControls";
 import {
   Activity,
   ArrowUpRight,
@@ -42,7 +44,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type Section = "command" | "voice" | "persona" | "api" | "permissions" | "updates";
+type Section = "command" | "tools" | "voice" | "persona" | "api" | "permissions" | "updates";
 type ProviderCard = [string, string, string, string];
 type CommandPlanPreview = { intent: string; summary: string; command: string; risk: "low" | "medium" | "blocked"; confirmation: boolean; allowed: boolean; reason?: string };
 
@@ -64,6 +66,7 @@ const providerCards: ProviderCard[] = [
 
 const nav = [
   ["command", Command, "Command desk"],
+  ["tools", Settings2, "Tools & routing"],
   ["voice", AudioLines, "Voice studio"],
   ["persona", Bot, "Conduct & memory"],
   ["api", KeyRound, "API vault"],
@@ -184,7 +187,7 @@ function PersonaPanel({ demeanor, learning, toggleDemeanor, toggleLearning, open
 }
 
 export default function Home() {
-  const [section, setSection] = useState<Section>("command");
+  const [section, setSection] = useState<Section>(() => window.location.hash === "#tools" ? "tools" : "command");
   const [setupOpen, setSetupOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [name, setName] = useState("Aline");
@@ -201,6 +204,7 @@ export default function Home() {
   const [learning, setLearning] = useState({ routines: true, phrasing: true, schedule: false });
   const [commandPlan, setCommandPlan] = useState<CommandPlanPreview | null>(null);
   const [automationPaused, setAutomationPaused] = useState(false);
+  const [voiceSettings, setVoiceSettings] = useState({ microphone: true, speaker: true, screenAnalysis: false, fileAnalysis: false });
   const greeting = useMemo(() => `At your signal, ${title}.`, [title]);
 
   const runCommand = () => {
@@ -228,7 +232,9 @@ export default function Home() {
       <section className={`command-canvas ${section === "persona" ? "persona-active" : ""}`}>
         {section === "persona" && <PersonaPanel demeanor={demeanor} learning={learning} toggleDemeanor={(key) => setDemeanor((current) => ({ ...current, [key]: !current[key] }))} toggleLearning={(key) => setLearning((current) => ({ ...current, [key]: !current[key] }))} openPermissions={() => setSection("permissions")} />}
         {section === "api" && <button className="api-guide-fab" onClick={() => setApiGuideOpen(true)}><KeyRound size={15} /> Where do I get keys?</button>}
-        <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
+        <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "tools" ? "Tools & routing" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
+
+        {section === "voice" && <VoiceControls settings={voiceSettings} toggle={(key) => setVoiceSettings((current) => ({ ...current, [key]: !current[key] }))} />}
 
         {section === "command" && <>
           <section className="hero-command" style={{ backgroundImage: `linear-gradient(90deg, rgba(5, 11, 24, .95) 18%, rgba(5,11,24,.42) 72%, rgba(5,11,24,.86)), url(${heroImage})` }}>
@@ -243,6 +249,8 @@ export default function Home() {
             <div className="analytics-card" style={{ backgroundImage: `linear-gradient(145deg, rgba(8, 17, 37, .72), rgba(8,17,37,.96)), url(${analyticsImage})` }}><div className="section-heading"><div><span className="eyebrow">Live workstation</span><h3>Quiet telemetry</h3></div><Activity size={19} /></div><div className="mini-chart"><svg viewBox="0 0 280 84" aria-label="Illustrative system telemetry"><path d="M0 61 C18 57, 25 32, 44 44 S70 64, 89 33 S120 49, 141 36 S170 53, 189 24 S227 45, 280 20" fill="none" stroke="url(#chartGradient)" strokeWidth="3" /><path d="M0 61 C18 57, 25 32, 44 44 S70 64, 89 33 S120 49, 141 36 S170 53, 189 24 S227 45, 280 20 L280 84 L0 84Z" fill="url(#fillGradient)" opacity=".5" /><defs><linearGradient id="chartGradient" x1="0" x2="1"><stop stopColor="#55d9ff"/><stop offset="1" stopColor="#2f6bff"/></linearGradient><linearGradient id="fillGradient" x1="0" x2="0" y2="1"><stop stopColor="#2f6bff" stopOpacity=".45"/><stop offset="1" stopColor="#2f6bff" stopOpacity="0"/></linearGradient></defs></svg></div><div className="analytics-foot"><span><b>42%</b> balanced load</span><span>next scan 02:14</span></div></div></section>
           <section className="metrics-row"><Metric label="CPU load" value="42" unit="%" icon={Cpu} delta="steady" /><Metric label="Memory" value="61" unit="%" icon={Database} delta="+3.2" /><Metric label="Network" value="18" unit="Mbps" icon={Network} delta="clear" /></section>
         </>}
+
+        {section === "tools" && <ToolsPanel />}
 
         {section === "voice" && <section className="voice-layout"><div className="voice-stage" style={{ backgroundImage: `linear-gradient(145deg, rgba(4,10,24,.84), rgba(4,10,24,.38)), url(${voiceImage})` }}><div className="voice-stage-copy"><span className="eyebrow light">Voice profile</span><h2>{language} is your native setting.</h2><p>Arthur listens for the language you use and replies in a natural voice. The production desktop app keeps the wake word local.</p><div className="voice-stage-actions"><button className="primary-button" onClick={() => setListening(!listening)}><Waves size={17} /> {listening ? "Pause listening" : "Preview wake word"}</button><button className="outline-button" onClick={() => setWakeWordOpen(true)}><TerminalSquare size={16} /> Review local setup</button></div></div><div className="voice-wave"><span /><span /><span /><span /><span /><span /><span /></div></div><div className="voice-options"><div className="section-heading"><div><span className="eyebrow">Language routing</span><h3>Natural switching</h3></div><Languages size={19} /></div>{["Kinyarwanda", "English", "French", "Kiswahili"].map((item) => <div className="language-row" key={item}><span className={`language-radio ${language === item ? "active" : ""}`} /><div><b>{item}</b><small>{language === item ? "Native profile language" : "Available when spoken"}</small></div>{language === item && <StatusPill>Default</StatusPill>}</div>)}<button className="outline-button full" onClick={() => toast("Arthur would save a new pronunciation note to the active profile.")}> <Plus size={16} /> Teach a pronunciation</button></div></section>}
 
