@@ -44,6 +44,7 @@ import { toast } from "sonner";
 
 type Section = "command" | "voice" | "persona" | "api" | "permissions" | "updates";
 type ProviderCard = [string, string, string, string];
+type CommandPlanPreview = { intent: string; summary: string; command: string; risk: "low" | "medium" | "blocked"; confirmation: boolean; allowed: boolean; reason?: string };
 
 const heroImage = "/manus-storage/arthur-hero-atmosphere_eca500cb.png";
 const analyticsImage = "/manus-storage/arthur-analytics-orbit_3b540420.png";
@@ -69,6 +70,33 @@ const nav = [
   ["permissions", ShieldCheck, "Permissions"],
   ["updates", UploadCloud, "Updates"],
 ] as const;
+
+function planCommandPreview(request: string): CommandPlanPreview {
+  const input = request.trim().toLowerCase();
+  const blocked = ["hack", "breach", "exploit", "keylogger", "steal password", "dump credentials", "disable antivirus", "disable firewall", "reverse shell", "scan network", "scan public", "ransomware", "phishing"];
+  if (!input) return { intent: "empty", summary: "Arthur needs a specific approved computer task.", command: "—", risk: "blocked", confirmation: false, allowed: false, reason: "No request supplied." };
+  if (blocked.some((term) => input.includes(term))) return { intent: "blocked request", summary: "Arthur will not prepare intrusion, evasion, credential, or attack activity.", command: "—", risk: "blocked", confirmation: false, allowed: false, reason: "Unauthorized or harmful system access is not available." };
+  const isLinux = /\b(kali|linux|wsl)\b/.test(input);
+  const templates: Array<[string[], Omit<CommandPlanPreview, "risk" | "confirmation" | "allowed">]> = isLinux
+    ? [
+        [["system status", "system information"], { intent: "local WSL diagnostics", summary: "Inspect the configured local WSL/Linux system.", command: "wsl.exe -d <approved-distro> -- uname -a" }],
+        [["disk space", "storage status"], { intent: "local WSL storage", summary: "Inspect storage in the configured local WSL/Linux system.", command: "wsl.exe -d <approved-distro> -- df -h" }],
+        [["memory", "ram"], { intent: "local WSL memory", summary: "Inspect memory use in the configured local WSL/Linux system.", command: "wsl.exe -d <approved-distro> -- free -h" }],
+        [["network status", "ip address"], { intent: "local WSL network", summary: "Inspect local WSL/Linux network addresses.", command: "wsl.exe -d <approved-distro> -- ip addr" }],
+        [["list processes", "running apps"], { intent: "local WSL processes", summary: "List local WSL/Linux processes.", command: "wsl.exe -d <approved-distro> -- ps aux" }],
+      ]
+    : [
+        [["system status", "computer status", "system information"], { intent: "windows system information", summary: "Collect Windows system information.", command: "systeminfo" }],
+        [["who am i", "current user"], { intent: "current Windows user", summary: "Show the signed-in Windows account.", command: "whoami" }],
+        [["ip address", "network address", "network status"], { intent: "Windows network information", summary: "Show local network adapter configuration.", command: "ipconfig" }],
+        [["list processes", "running apps", "running applications", "what is running"], { intent: "Windows process information", summary: "List running Windows processes.", command: "tasklist" }],
+        [["disk space", "storage status", "drive space"], { intent: "Windows storage information", summary: "Show available Windows file-system space.", command: "powershell.exe -NoProfile -Command Get-PSDrive -PSProvider FileSystem" }],
+        [["check internet", "test internet", "internet connection"], { intent: "internet check", summary: "Perform one basic connectivity check.", command: "ping -n 1 1.1.1.1" }],
+      ];
+  if (["lock computer", "lock pc", "lock my computer"].some((term) => input.includes(term))) return { intent: "lock workstation", summary: "Lock this Windows session. Arthur requires your explicit approval before taking this action.", command: "rundll32.exe user32.dll,LockWorkStation", risk: "medium", confirmation: true, allowed: true };
+  for (const [phrases, template] of templates) if (phrases.some((term) => input.includes(term))) return { ...template, risk: "low", confirmation: false, allowed: true };
+  return { intent: "unreviewed request", summary: "Arthur has no reviewed command template for that request.", command: "—", risk: "blocked", confirmation: false, allowed: false, reason: "Add and test an explicit template in the developer command registry; raw generated shell text is never run." };
+}
 
 function StatusPill({ tone = "blue", children }: { tone?: "blue" | "green" | "amber" | "gray"; children: React.ReactNode }) {
   return <span className={`status-pill ${tone}`}><span className="status-dot" />{children}</span>;
@@ -171,12 +199,16 @@ export default function Home() {
   const [apiGuideOpen, setApiGuideOpen] = useState(false);
   const [demeanor, setDemeanor] = useState({ polite: true, wit: true, candor: true, calm: true });
   const [learning, setLearning] = useState({ routines: true, phrasing: true, schedule: false });
+  const [commandPlan, setCommandPlan] = useState<CommandPlanPreview | null>(null);
+  const [automationPaused, setAutomationPaused] = useState(false);
   const greeting = useMemo(() => `At your signal, ${title}.`, [title]);
 
   const runCommand = () => {
     if (!command.trim()) return toast.error("Give Arthur something to prepare first.");
-    toast.success("Arthur would answer by voice in the desktop app.", { description: "This browser preview never contacts a provider or controls your computer." });
-    setCommand("");
+    const plan = planCommandPreview(command);
+    setCommandPlan(plan);
+    if (plan.allowed) toast.success("Arthur prepared a reviewed local command plan.", { description: "This browser preview never executes a command or contacts a provider." });
+    else toast.error("Arthur declined that command request.", { description: plan.reason });
   };
   const saveProfile = (nextName: string, nextTitle: string, nextLanguage: string) => {
     setName(nextName); setTitle(nextTitle); setLanguage(nextLanguage); setSetupOpen(false);
@@ -203,7 +235,9 @@ export default function Home() {
             <div className="hero-copy"><div className="eyebrow light">Arthur is standing by</div><h2>{greeting}</h2><p>Voice-first assistance, carefully governed. Ask in {language}, English, French, or Kiswahili.</p><div className="hero-meta"><StatusPill>Wake word ready</StatusPill><span><LockKeyhole size={14} /> Spoken replies by default</span></div></div>
             <div className={`listening-orb ${listening ? "listening" : ""}`}><span className="orbit orbit-a" /><span className="orbit orbit-b" /><span className="orb-core"><Mic size={27} /></span><span className="orb-label">{listening ? "LISTENING" : "ARTHUR"}</span></div>
           </section>
-          <section className="command-entry"><div className="command-prefix"><TerminalSquare size={18} /> <span>Speak or type a request</span></div><input value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => e.key === "Enter" && runCommand()} placeholder="For example: prepare a concise research brief on…" /><button className="voice-button" onClick={() => setListening(!listening)} aria-label="Toggle listening"><Mic size={18} /></button><button className="primary-button compact" onClick={runCommand}>Prepare <ArrowUpRight size={16} /></button></section>
+          <section className="command-entry"><div className="command-prefix"><TerminalSquare size={18} /> <span>Speak or type a request</span></div><input value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => e.key === "Enter" && runCommand()} placeholder="For example: check my disk space, or show Kali WSL memory…" /><button className="voice-button" onClick={() => setListening(!listening)} aria-label="Toggle listening"><Mic size={18} /></button><button className="primary-button compact" onClick={runCommand}>Prepare <ArrowUpRight size={16} /></button></section>
+          {commandPlan && <section className={`command-plan ${commandPlan.risk}`} aria-live="polite"><div className="plan-emblem"><TerminalSquare size={20} /></div><div className="plan-copy"><span className="eyebrow">Reviewed command plan / {commandPlan.risk}</span><h3>{commandPlan.summary}</h3><code>{commandPlan.command}</code>{commandPlan.reason && <p>{commandPlan.reason}</p>}</div><div className="plan-actions">{commandPlan.confirmation ? <StatusPill tone="amber">Approval required</StatusPill> : commandPlan.allowed ? <StatusPill tone="green">Read-only diagnostic</StatusPill> : <StatusPill tone="amber">Not available</StatusPill>}<button className="outline-button" onClick={() => toast(commandPlan.allowed ? "The production app would show this exact command and follow its permission policy." : "Arthur will retain no raw command text in its audit record.")}>{commandPlan.allowed ? "Inspect policy" : "Why blocked?"}</button></div></section>}
+          <section className="command-governance"><div><span className="eyebrow">Automation governor</span><p>Arthur translates words into a small command allowlist. It never passes generated text directly to a shell.</p></div><button className={`outline-button ${automationPaused ? "pause-active" : ""}`} onClick={() => { setAutomationPaused((current) => !current); toast(automationPaused ? "Automation governor re-armed." : "Automation governor paused; new command plans remain visible but cannot proceed."); }}><Power size={16} /> {automationPaused ? "Resume approved tools" : "Pause all automation"}</button></section>
           <section className="quick-grid"><button onClick={() => setCommand("Summarize my calendar and alert me to conflicts")}> <BellRing size={17} /> Prepare day brief</button><button onClick={() => setCommand("Check workstation health and explain any bottleneck")}> <CircleGauge size={17} /> Prepare health readout</button><button onClick={() => setCommand("Research the latest information and give me a spoken summary")}> <Search size={17} /> Prepare private research</button><button onClick={() => setSection("permissions")}> <ShieldCheck size={17} /> Inspect permissions</button></section>
           <section className="command-lower"><div className="conversation-card"><div className="section-heading"><div><span className="eyebrow">Recent exchange</span><h3>Short, honest, and audible.</h3></div><button className="text-button" onClick={() => toast("Transcript remains local in the desktop version.")}>Inspect local transcript</button></div><div className="exchange"><span className="exchange-mark">A</span><div><p className="exchange-time">NOW / Arthur</p><p>“Your system is running comfortably. I can prepare the research you asked for, then I’ll wait for your approval before I show anything on screen.”</p><div className="exchange-actions"><button onClick={() => toast("In the desktop app, Arthur would repeat this through your selected voice.")}> <Volume2 size={14} /> Speak again</button><button onClick={() => toast("Visual panels appear only after you confirm.")}> <MonitorCog size={14} /> Request visual panel</button></div></div></div></div>
             <div className="analytics-card" style={{ backgroundImage: `linear-gradient(145deg, rgba(8, 17, 37, .72), rgba(8,17,37,.96)), url(${analyticsImage})` }}><div className="section-heading"><div><span className="eyebrow">Live workstation</span><h3>Quiet telemetry</h3></div><Activity size={19} /></div><div className="mini-chart"><svg viewBox="0 0 280 84" aria-label="Illustrative system telemetry"><path d="M0 61 C18 57, 25 32, 44 44 S70 64, 89 33 S120 49, 141 36 S170 53, 189 24 S227 45, 280 20" fill="none" stroke="url(#chartGradient)" strokeWidth="3" /><path d="M0 61 C18 57, 25 32, 44 44 S70 64, 89 33 S120 49, 141 36 S170 53, 189 24 S227 45, 280 20 L280 84 L0 84Z" fill="url(#fillGradient)" opacity=".5" /><defs><linearGradient id="chartGradient" x1="0" x2="1"><stop stopColor="#55d9ff"/><stop offset="1" stopColor="#2f6bff"/></linearGradient><linearGradient id="fillGradient" x1="0" x2="0" y2="1"><stop stopColor="#2f6bff" stopOpacity=".45"/><stop offset="1" stopColor="#2f6bff" stopOpacity="0"/></linearGradient></defs></svg></div><div className="analytics-foot"><span><b>42%</b> balanced load</span><span>next scan 02:14</span></div></div></section>

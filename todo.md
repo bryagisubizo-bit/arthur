@@ -14,3 +14,12 @@
 - [x] Add holographic data-workspace preview surfaces for safe document, analytics, and research workflows.
 - [x] Create a developer API acquisition guide that identifies where to obtain each required key and which values must stay server-only.
 - [x] Verify the new preview states and rebuild the secret-free Windows source bundle.
+
+## Natural-Language Command Planning Audit
+
+- [x] Audit the attached specification to identify delivered, partially delivered, missing, and disallowed capabilities.
+- [x] Add a natural-language command planner with Windows, PowerShell, WSL, and authorized Kali/Linux command knowledge.
+- [x] Add risk tiers, plain-language command previews, confirmation gates, and a local allowlist for executable commands.
+- [x] Add safe command-palette preview controls, execution history, and an emergency pause for automation.
+- [x] Extend the Windows prototype with a non-executing command planner and risk-classification module.
+- [x] Verify that command planning never enables unauthorized access, destructive actions without confirmation, or unrestricted shell execution.
