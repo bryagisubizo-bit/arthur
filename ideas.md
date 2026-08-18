@@ -71,3 +71,6 @@ Arthur uses an abstract orbital **A**: three controlled cobalt arcs orbiting a p
 - Arthur surfaces use hairline separators, clipped instrument corners, and asymmetric readout clusters before conventional rounded cards.
 - Arthur Cobalt `#2F6BFF` signals primary attention and deliberate action; pale cyan signals listening, verified, and healthy states; amber signals consent or approval-needed states only.
 - Utility labels state the actual operation and its consent state, using language such as “prepare,” “request approval,” and “inspect.”
+- Every voice-facing workspace centres the segmented cobalt listening orb and thin orbit ring; waveform graphics remain secondary telemetry.
+- Arthur Cobalt `#2F6BFF` remains the command and action colour. Personal teal and amber choices tint only the selected workspace surface and never replace the interface frame.
+- Preference controls are rendered as clipped instrument panels with explicit operational states rather than generic rounded settings cards.

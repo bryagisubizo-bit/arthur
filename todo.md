@@ -32,3 +32,10 @@
 - [x] Add a transparent automation registry with trigger, owner, permission, pause, and audit metadata.
 - [x] Extend the feature audit with the precise implementation status and safety boundary for every prompt category.
 - [x] Verify the improved preview and rebuild the secret-free Windows source bundle.
+
+## Readability & Expression Refinement
+
+- [x] Increase the preview’s baseline type scale while preserving the dashboard hierarchy and responsive layout.
+- [x] Add a user-controlled display-colour selector for Arthur’s visual workspace.
+- [x] Add a user-controlled voice-style selector with clear provider-dependent preview states.
+- [x] Verify desktop and mobile readability, save a checkpoint, and deliver the update.

@@ -2,6 +2,7 @@
  * Orbital Command Atelier: asymmetric command canvas, cobalt instrumentation, and explicit consent states.
  */
 import { useMemo, useState } from "react";
+import ExpressionPanel, { type ColourMode, type VoiceStyle } from "@/components/ExpressionPanel";
 import ToolsPanel from "@/components/ToolsPanel";
 import VoiceControls from "@/components/VoiceControls";
 import {
@@ -187,7 +188,10 @@ function PersonaPanel({ demeanor, learning, toggleDemeanor, toggleLearning, open
 }
 
 export default function Home() {
-  const [section, setSection] = useState<Section>(() => window.location.hash === "#tools" ? "tools" : "command");
+  const [section, setSection] = useState<Section>(() => {
+    const requested = window.location.hash.slice(1) as Section;
+    return nav.some(([id]) => id === requested) ? requested : "command";
+  });
   const [setupOpen, setSetupOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [name, setName] = useState("Aline");
@@ -205,6 +209,8 @@ export default function Home() {
   const [commandPlan, setCommandPlan] = useState<CommandPlanPreview | null>(null);
   const [automationPaused, setAutomationPaused] = useState(false);
   const [voiceSettings, setVoiceSettings] = useState({ microphone: true, speaker: true, screenAnalysis: false, fileAnalysis: false });
+  const [colourMode, setColourMode] = useState<ColourMode>("cobalt");
+  const [voiceStyle, setVoiceStyle] = useState<VoiceStyle>("diplomatic");
   const greeting = useMemo(() => `At your signal, ${title}.`, [title]);
 
   const runCommand = () => {
@@ -220,7 +226,7 @@ export default function Home() {
   };
 
   return (
-    <main className="arthur-app">
+    <main className={`arthur-app colour-${colourMode}`}>
       <aside className="instrument-rail">
         <div className="brand-lockup"><img src={markImage} alt="Arthur orbital mark" /><div><strong>ARTHUR</strong><span>desktop intelligence</span></div></div>
         <nav aria-label="Arthur sections">
@@ -234,7 +240,7 @@ export default function Home() {
         {section === "api" && <button className="api-guide-fab" onClick={() => setApiGuideOpen(true)}><KeyRound size={15} /> Where do I get keys?</button>}
         <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "tools" ? "Tools & routing" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
 
-        {section === "voice" && <VoiceControls settings={voiceSettings} toggle={(key) => setVoiceSettings((current) => ({ ...current, [key]: !current[key] }))} />}
+        {section === "voice" && <><ExpressionPanel colourMode={colourMode} voiceStyle={voiceStyle} setColourMode={setColourMode} setVoiceStyle={setVoiceStyle} /><VoiceControls settings={voiceSettings} toggle={(key) => setVoiceSettings((current) => ({ ...current, [key]: !current[key] }))} /></>}
 
         {section === "command" && <>
           <section className="hero-command" style={{ backgroundImage: `linear-gradient(90deg, rgba(5, 11, 24, .95) 18%, rgba(5,11,24,.42) 72%, rgba(5,11,24,.86)), url(${heroImage})` }}>
@@ -252,7 +258,7 @@ export default function Home() {
 
         {section === "tools" && <ToolsPanel />}
 
-        {section === "voice" && <section className="voice-layout"><div className="voice-stage" style={{ backgroundImage: `linear-gradient(145deg, rgba(4,10,24,.84), rgba(4,10,24,.38)), url(${voiceImage})` }}><div className="voice-stage-copy"><span className="eyebrow light">Voice profile</span><h2>{language} is your native setting.</h2><p>Arthur listens for the language you use and replies in a natural voice. The production desktop app keeps the wake word local.</p><div className="voice-stage-actions"><button className="primary-button" onClick={() => setListening(!listening)}><Waves size={17} /> {listening ? "Pause listening" : "Preview wake word"}</button><button className="outline-button" onClick={() => setWakeWordOpen(true)}><TerminalSquare size={16} /> Review local setup</button></div></div><div className="voice-wave"><span /><span /><span /><span /><span /><span /><span /></div></div><div className="voice-options"><div className="section-heading"><div><span className="eyebrow">Language routing</span><h3>Natural switching</h3></div><Languages size={19} /></div>{["Kinyarwanda", "English", "French", "Kiswahili"].map((item) => <div className="language-row" key={item}><span className={`language-radio ${language === item ? "active" : ""}`} /><div><b>{item}</b><small>{language === item ? "Native profile language" : "Available when spoken"}</small></div>{language === item && <StatusPill>Default</StatusPill>}</div>)}<button className="outline-button full" onClick={() => toast("Arthur would save a new pronunciation note to the active profile.")}> <Plus size={16} /> Teach a pronunciation</button></div></section>}
+        {section === "voice" && <section className="voice-layout"><div className="voice-stage" style={{ backgroundImage: `linear-gradient(145deg, rgba(4,10,24,.84), rgba(4,10,24,.38)), url(${voiceImage})` }}><div className="voice-stage-copy"><span className="eyebrow light">Voice profile / local wake word</span><h2>{language} is your native setting.</h2><p>Arthur listens for the language you use and replies in a natural voice. The production desktop app keeps the wake word local.</p><div className="voice-stage-actions"><button className="primary-button" onClick={() => setListening(!listening)}><Waves size={17} /> {listening ? "Pause listening" : "Preview wake word"}</button><button className="outline-button" onClick={() => setWakeWordOpen(true)}><TerminalSquare size={16} /> Review local setup</button></div></div><div className={`voice-orbital-anchor ${listening ? "active" : ""}`} aria-label={listening ? "Arthur is listening" : "Arthur is ready"}><span className="voice-orbit voice-orbit-one" /><span className="voice-orbit voice-orbit-two" /><span className="voice-orb-core"><Mic size={27} /></span><span className="voice-orb-state">{listening ? "LISTENING" : "READY"}</span></div><div className="voice-wave" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></div></div><div className="voice-options"><div className="section-heading"><div><span className="eyebrow">Language routing</span><h3>Natural switching</h3></div><Languages size={19} /></div>{["Kinyarwanda", "English", "French", "Kiswahili"].map((item) => <div className="language-row" key={item}><span className={`language-radio ${language === item ? "active" : ""}`} /><div><b>{item}</b><small>{language === item ? "Native profile language" : "Available when spoken"}</small></div>{language === item && <StatusPill>Default</StatusPill>}</div>)}<button className="outline-button full" onClick={() => toast("Arthur would save a new pronunciation note to the active profile.")}> <Plus size={16} /> Teach a pronunciation</button></div></section>}
 
         {section === "api" && <section className="api-layout"><div className="api-banner"><div><span className="eyebrow">Developer-controlled integrations</span><h2>Parallel provider boxes, one safe vault.</h2><p>Use this preview to inspect the setup flow. It does not transmit, save, or test any secret.</p></div><div className="api-banner-seal"><KeyRound size={25} /><span>Placeholder-only<br/>preview</span></div></div><div className="provider-grid">{[...providerCards, ...customIntegrations].map(([label, provider, detail, key]) => <article className="provider-card" key={label}><div className="provider-heading"><span className="provider-icon"><Sparkles size={16} /></span><div><h3>{label}</h3><p>{detail}</p></div><StatusPill tone="gray">Not connected</StatusPill></div><label>Provider<select defaultValue={provider}><option>{provider}</option><option>Custom provider</option><option>Disabled</option></select></label>{provider === "Supabase" ? <><label>Project URL<input type="url" name="supabase-url" placeholder="https://your-project.supabase.co" /></label><label>Publishable key<input type="password" name="supabase-publishable-key" placeholder="sb_publishable_..." /></label></> : provider === "openWakeWord" ? <div className="wakeword-card-note"><StatusPill tone="amber">Local install required</StatusPill><p>The desktop app requests approval before opening Command Prompt or enabling tray listening.</p><button className="outline-button" onClick={() => setWakeWordOpen(true)}><TerminalSquare size={15} /> Review setup</button></div> : <label>Developer key<input type="password" name={key} placeholder="Stored locally in the desktop app" /></label>}<div className="provider-actions"><button className="outline-button" onClick={() => toast("Connection test is intentionally disabled in this browser preview.")}>Test</button><button className="text-button" onClick={() => toast(`${label} is marked as a configured placeholder.`)}>Save placeholder</button></div></article>)}</div><button className="add-integration" onClick={() => setIntegrationOpen(true)}> <Plus size={18} /> Add an approved integration <ChevronRight size={17} /></button></section>}
 
