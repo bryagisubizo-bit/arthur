@@ -39,3 +39,17 @@
 - [x] Add a user-controlled display-colour selector for Arthur’s visual workspace.
 - [x] Add a user-controlled voice-style selector with clear provider-dependent preview states.
 - [x] Verify desktop and mobile readability, save a checkpoint, and deliver the update.
+
+## Personal Notes & Capability Registry
+
+- [x] Add a private notes workspace for self, people, and general notes with draft, review, study, edit, delete, and voice-edit placeholder states.
+- [x] Add emotionally aware, friend-like conversation settings that match urgency and acknowledge feelings while retaining a respectful non-abusive boundary.
+- [x] Add an API capability register that groups every configured or planned provider room by function, owner, credential status, and safe update-check state.
+- [x] Add resource-aware command routing that identifies the required provider room and explains when an approved API or local adapter is unavailable.
+- [x] Document the requirement for a server-side scheduled provider health/version check before implementing automatic API update monitoring.
+- [x] Verify the new controls on desktop and mobile, save a checkpoint, and deliver the update.
+
+## Completion Corrections
+
+- [x] Add explicit emotional-conduct controls for tone matching, empathy/urgency acknowledgement, and the respectful-boundary policy.
+- [x] Show a responsible owner and explicit credential state on every API capability room.
