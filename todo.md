@@ -200,3 +200,11 @@
 - [x] Add optional local face-enrolment and verification states with camera indicators, explicit consent, no uploaded biometric data, and password fallback; do not claim security parity with Windows Hello.
 - [x] Add browser-preview states, desktop regression coverage, documentation, and a credential-free source bundle.
 - [x] Save a checkpoint and deliver the protected Spatial-room expansion.
+
+## Exclusive Spatial-Room Access Method
+
+- [x] Document the required-choice policy: Windows Hello-only access when selected, password-only access when selected, and no silent biometric activation.
+- [x] Update protected Spatial-room setup so a user selects exactly one working access method rather than being required to configure a password alongside Windows Hello.
+- [x] Require OS-managed Windows Hello verification before room access when the user selected that method, and show corrective setup guidance when it is unavailable.
+- [x] Update browser preview states, desktop regression coverage, documentation, and a credential-free source bundle for the revised access model.
+- [ ] Save a checkpoint and deliver the exclusive protected Spatial-room access revision.
