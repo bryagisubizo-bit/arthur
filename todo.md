@@ -222,3 +222,10 @@
 - [x] Add a concise greeting when Arthur’s app window opens or the user deliberately wakes Arthur, without starting background listening or speaking after the user has disabled spoken replies.
 - [x] Add matching browser-preview interaction states, desktop regression coverage, and user-visible controls for replaying or silencing the greeting.
 - [x] Validate the greeting experience, rebuild the credential-free Windows source bundle, save a checkpoint, and deliver the update.
+
+## Local-Camera Face-Access Safeguards
+
+- [x] Add a user-initiated Windows-camera acceptance-test flow with visible activation, cancel, readiness, and plain-language failure states; never open the camera automatically.
+- [x] Add an optional, local accessibility audio cue for camera activation and verification outcomes, with a visible mute control and no spoken biometric information.
+- [x] Add a local cooldown and temporary lockout after repeated failed face-access attempts, with a visible timer and recovery-secret path; retain no raw video or failed frames.
+- [x] Add matching browser-preview states, desktop regression coverage, Windows guidance, a rebuilt credential-free source bundle, checkpoint, and delivery.

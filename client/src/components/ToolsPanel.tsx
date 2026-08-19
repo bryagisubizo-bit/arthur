@@ -1,7 +1,7 @@
 /**
  * Orbital Command Atelier: clipped operational cards, explicit consent labels, and no implied remote control.
  */
-import { useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { prepareSymptomGuidance, type SymptomGuidance } from "@/lib/symptomSupport";
 import {
   AppWindow,
@@ -94,11 +94,33 @@ export default function ToolsPanel() {
   const [spatialFaceReady, setSpatialFaceReady] = useState(false);
   const [spatialUnlocked, setSpatialUnlocked] = useState(false);
   const [spatialAccessMethod, setSpatialAccessMethod] = useState<"" | "password" | "windows_hello" | "local_camera_face">("");
+  const [faceCameraTestStatus, setFaceCameraTestStatus] = useState<"idle" | "passed">("idle");
+  const [faceAudioCue, setFaceAudioCue] = useState(false);
+  const [faceFailures, setFaceFailures] = useState(0);
+  const [faceCooldownSeconds, setFaceCooldownSeconds] = useState(0);
   const [symptomText, setSymptomText] = useState("");
   const [symptomGuidance, setSymptomGuidance] = useState<SymptomGuidance | null>(null);
   const dragCard = useRef<string | null>(null);
   const touchOrigin = useRef<{ x: number; y: number } | null>(null);
   const active = routeModes.find((item) => item.name === activeRoute) ?? routeModes[0];
+
+  useEffect(() => {
+    if (!faceCooldownSeconds) return;
+    const timer = window.setInterval(() => setFaceCooldownSeconds((seconds) => Math.max(0, seconds - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [faceCooldownSeconds]);
+
+  const previewFaceFailure = () => {
+    if (faceCooldownSeconds) return;
+    const nextAttempts = faceFailures + 1;
+    setFaceFailures(nextAttempts);
+    if (nextAttempts >= 3) {
+      setFaceCooldownSeconds(60);
+      toast.error("Preview face access is temporarily locked.", { description: "The installed app uses the same short local cooldown after repeated completed non-matches. It retains no failed frame." });
+      return;
+    }
+    toast("Preview non-match recorded.", { description: `Attempt ${nextAttempts} of 3. The installed app stores only a short local counter, never a failed camera frame.` });
+  };
 
   const moveSelection = (direction: number) => {
     if (!spatialCards.length) return;
@@ -227,10 +249,15 @@ export default function ToolsPanel() {
             <button className="outline-button" onClick={() => { setSpatialAccessMethod("password"); setSpatialPasswordReady(true); setSpatialFaceReady(false); setSpatialUnlocked(false); setGestureConsent(false); toast("Password-only access is represented in this preview.", { description: "In the installed app, you choose and confirm a 10+ character password; its plaintext is never saved in Arthur’s configuration." }); }}>Use password only</button>
             <button className="outline-button" onClick={() => { setSpatialAccessMethod("windows_hello"); setSpatialPasswordReady(false); setSpatialFaceReady(false); setSpatialUnlocked(false); setGestureConsent(false); toast("Windows Hello-only access is represented in this preview.", { description: "The installed app asks Windows to verify enrolled face or PIN. Arthur requests no room password and never opens a camera for this check." }); }}>Use Windows Hello only</button>
             <button className="outline-button" onClick={() => { setSpatialAccessMethod("local_camera_face"); setSpatialPasswordReady(false); setSpatialFaceReady(true); setSpatialUnlocked(false); setGestureConsent(false); toast("Local camera face-access is represented in this preview.", { description: "The installed app requires explicit camera consent, enrolment, an encrypted local model, and a recovery secret. This browser preview never opens a camera." }); }}>Use local camera face access</button>
-            <button className="primary-button compact" onClick={() => { const isReady = spatialAccessMethod === "password" ? spatialPasswordReady : spatialAccessMethod === "local_camera_face" ? spatialFaceReady : spatialAccessMethod === "windows_hello"; if (!isReady) { toast.error("Choose and complete one room access method first.", { description: "Select password-only, Windows Hello-only, or local-camera face access. Arthur never silently enables a biometric check." }); return; } setSpatialUnlocked(true); toast("Protected Spatial room unlocked in preview.", { description: spatialAccessMethod === "windows_hello" ? "The Windows app requires OS-managed Windows Hello; this browser preview does neither." : spatialAccessMethod === "local_camera_face" ? "The Windows app runs an explicit visible local camera check; this browser preview does not access a camera." : "The Windows app requires the local room password; this browser preview does not retain one." }); }}>{spatialUnlocked ? "Room unlocked" : "Unlock room"}</button>
+            <button className="primary-button compact" onClick={() => { const isReady = spatialAccessMethod === "password" ? spatialPasswordReady : spatialAccessMethod === "local_camera_face" ? spatialFaceReady : spatialAccessMethod === "windows_hello"; if (!isReady) { toast.error("Choose and complete one room access method first.", { description: "Select password-only, Windows Hello-only, or local-camera face access. Arthur never silently enables a biometric check." }); return; } if (spatialAccessMethod === "local_camera_face" && faceCooldownSeconds) { toast.error("Local face access is temporarily locked in this preview.", { description: `Wait about ${faceCooldownSeconds} seconds or use the recovery-secret reset path. No frame was retained.` }); return; } setSpatialUnlocked(true); toast("Protected Spatial room unlocked in preview.", { description: spatialAccessMethod === "windows_hello" ? "The Windows app requires OS-managed Windows Hello; this browser preview does neither." : spatialAccessMethod === "local_camera_face" ? "The Windows app runs an explicit visible local camera check; this browser preview does not access a camera." : "The Windows app requires the local room password; this browser preview does not retain one." }); }}>{spatialUnlocked ? "Room unlocked" : "Unlock room"}</button>
             <button className="text-button" disabled={!spatialUnlocked} onClick={() => { setSpatialUnlocked(false); setGestureConsent(false); toast("Preview Spatial room locked."); }}>Lock room</button>
           </div>
           <div className="spatial-install-line"><b>Optional installation is always manual.</b><code>pip install -r requirements-gesture-optional.txt</code><button className="text-button" onClick={() => { void navigator.clipboard?.writeText("pip install -r requirements-gesture-optional.txt"); toast("Optional gesture command copied.", { description: "Arthur never installs packages automatically. Review it, then run it yourself in the Arthur source folder." }); }}>Copy gesture command</button><code>pip install -r requirements-face-access-optional.txt</code><button className="text-button" onClick={() => { void navigator.clipboard?.writeText("pip install -r requirements-face-access-optional.txt"); toast("Optional local face-access command copied.", { description: "Review and run it yourself only if you want experimental on-device camera face access. Arthur will then ask for separate enrolment consent." }); }}>Copy face-access command</button></div>
+          <div className="face-safeguard-panel" aria-label="Local camera face-access safeguards preview">
+            <div><span className="eyebrow">Camera safeguards / Windows prototype</span><h4>Test the camera deliberately. Pause repeated non-matches.</h4><p>{faceCameraTestStatus === "passed" ? "Readiness test represented: the installed app shows a camera-active preview, confirms frames are available, and immediately discards them." : "Run the local camera readiness test before enrolment if you want to confirm Windows permission, the shutter, and the selected camera. This browser preview never opens a camera."}</p></div>
+            <div className="face-safeguard-actions"><button className="outline-button" onClick={() => { setFaceCameraTestStatus("passed"); toast("Camera readiness test represented in preview.", { description: "On Windows, it opens only after your confirmation, shows a camera-active preview, and stores no image, video, model, or failed frame." }); }}>Preview camera readiness</button><button className={`outline-button ${faceAudioCue ? "active" : ""}`} aria-pressed={faceAudioCue} onClick={() => { setFaceAudioCue((enabled) => !enabled); toast(faceAudioCue ? "Preview accessibility cue muted." : "Preview accessibility cue enabled.", { description: "The installed app uses only a local system tone for camera activation and verification outcomes. It does not speak or reveal biometric details." }); }}><Volume2 size={15} /> {faceAudioCue ? "Cue enabled" : "Enable audio cue"}</button><button className="outline-button" disabled={Boolean(faceCooldownSeconds)} onClick={previewFaceFailure}>Preview failed face check</button></div>
+            <div className={`face-lockout-state ${faceCooldownSeconds ? "locked" : ""}`} role="status"><TimerReset size={16} /><span>{faceCooldownSeconds ? `Temporary local lockout: try again in about ${faceCooldownSeconds} seconds, or use the recovery secret to erase and reset local face access.` : faceFailures ? `${faceFailures} preview non-match${faceFailures === 1 ? "" : "es"} recorded. A 60-second local cooldown begins after 3 completed non-matches.` : "No recent preview non-matches. The Windows app retains no failed frame; it uses only a short local counter/timer if needed."}</span><button className="text-button" onClick={() => { setFaceFailures(0); setFaceCooldownSeconds(0); toast("Preview recovery-reset path represented.", { description: "The installed app requires the recovery secret before erasing the encrypted local model and clearing its cooldown." }); }}>Preview recovery reset</button></div>
+          </div>
         </div>
         <div className="spatial-canvas" aria-disabled={!spatialUnlocked} style={{ "--spatial-scale": spatialZoom / 100 } as CSSProperties} onTouchStart={(event) => { if (!spatialUnlocked) return; const touch = event.touches[0]; touchOrigin.current = touch ? { x: touch.clientX, y: touch.clientY } : null; }} onTouchEnd={(event) => { if (!spatialUnlocked) return; const origin = touchOrigin.current; const touch = event.changedTouches[0]; if (origin && touch && Math.abs(touch.clientX - origin.x) > 56) { moveSelection(touch.clientX > origin.x ? -1 : 1); toast("Touch swipe selected a neighbouring Arthur workspace card."); } touchOrigin.current = null; }} onWheel={(event) => { if (spatialUnlocked && event.ctrlKey) { event.preventDefault(); setSpatialZoom((current) => Math.min(150, Math.max(70, current + (event.deltaY < 0 ? 5 : -5)))); } }}>
           <div className="spatial-canvas-meta"><span><MoveHorizontal size={15} /> {selectedSpatialCard || "No card selected"}</span><span>{spatialZoom}% canvas</span></div>
