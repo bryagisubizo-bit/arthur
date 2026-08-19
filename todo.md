@@ -208,3 +208,10 @@
 - [x] Require OS-managed Windows Hello verification before room access when the user selected that method, and show corrective setup guidance when it is unavailable.
 - [x] Update browser preview states, desktop regression coverage, documentation, and a credential-free source bundle for the revised access model.
 - [x] Save a checkpoint and deliver the exclusive protected Spatial-room access revision.
+
+## Local Camera Face-Access Fallback
+
+- [x] Document explicit local-biometric enrolment, camera-indicator, encrypted-template, deletion, recovery, and no-security-equivalence boundaries.
+- [x] Add a separately selected local-camera face-access method for the protected Spatial room when Windows Hello is not usable; require deliberate enrollment and a recovery secret.
+- [x] Add visible local camera enrolment, verification, cancellation, deletion, and failure-handling states; do not transmit images or templates and do not retain raw video.
+- [x] Add browser-preview states, desktop regression coverage, setup documentation, a credential-free source bundle, checkpoint, and delivery for the local-camera fallback.
