@@ -150,4 +150,5 @@
 - [x] Rebuild the Windows desktop navigation and visual shell in the Orbital Command Atelier style.
 - [x] Port the key preview workflows for command planning, API Vault, consent, autonomy, and personal formatting as desktop-safe states.
 - [x] Test the revised desktop prototype, rebuild the credential-free source bundle, and update the Windows installer/build instructions.
-- [ ] Save a browser-preview checkpoint documenting the desktop parity update and deliver the revised Windows source bundle.
+- [x] Save a browser-preview checkpoint documenting the desktop parity update and deliver the revised Windows source bundle.
+- [x] Attach the rebuilt credential-free Windows source bundle to the user-facing desktop-parity delivery.
