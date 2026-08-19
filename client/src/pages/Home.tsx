@@ -8,6 +8,7 @@ import NotesPanel from "@/components/NotesPanel";
 import CapabilityRegistry from "@/components/CapabilityRegistry";
 import ProviderCatalogue from "@/components/ProviderCatalogue";
 import ExpressionPanel, { type ColourMode, type VoiceStyle } from "@/components/ExpressionPanel";
+import AutonomyPanel, { type AppearancePreferences, type BackgroundPolicy } from "@/components/AutonomyPanel";
 import ToolsPanel from "@/components/ToolsPanel";
 import VoiceControls from "@/components/VoiceControls";
 import {
@@ -51,7 +52,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type Section = "command" | "tools" | "voice" | "persona" | "notes" | "api" | "permissions" | "updates";
+type Section = "command" | "tools" | "voice" | "persona" | "notes" | "autonomy" | "api" | "permissions" | "updates";
 type ProviderCard = [string, string, string, string];
 type CommandPlanPreview = { intent: string; summary: string; command: string; risk: "low" | "medium" | "blocked"; confirmation: boolean; allowed: boolean; reason?: string; missingRoom?: string };
 
@@ -77,6 +78,7 @@ const nav = [
   ["voice", AudioLines, "Voice studio"],
   ["persona", Bot, "Conduct & memory"],
   ["notes", FolderCog, "Private notes"],
+  ["autonomy", Radar, "Autonomy & change"],
   ["api", KeyRound, "API vault"],
   ["permissions", ShieldCheck, "Permissions"],
   ["updates", UploadCloud, "Updates"],
@@ -223,6 +225,8 @@ export default function Home() {
   const [voiceStyle, setVoiceStyle] = useState<VoiceStyle>("diplomatic");
   const [emotionallyAware, setEmotionallyAware] = useState(true);
   const [catalogueFocus, setCatalogueFocus] = useState<string | null>(null);
+  const [backgroundPolicy, setBackgroundPolicy] = useState<BackgroundPolicy>({ enabled: false, localListening: false, actionExecution: false, spokenReply: true, visualResult: "ask" });
+  const [appearance, setAppearance] = useState<AppearancePreferences>({ typeScale: "standard", density: "relaxed", motion: "calm" });
   const greeting = useMemo(() => `At your signal, ${title}.`, [title]);
 
   const runCommand = () => {
@@ -238,7 +242,7 @@ export default function Home() {
   };
 
   return (
-    <main className={`arthur-app colour-${colourMode}`}>
+    <main className={`arthur-app colour-${colourMode} type-${appearance.typeScale} density-${appearance.density} motion-${appearance.motion}`}>
       <aside className="instrument-rail">
         <div className="brand-lockup"><img src={markImage} alt="Arthur orbital mark" /><div><strong>ARTHUR</strong><span>desktop intelligence</span></div></div>
         <nav aria-label="Arthur sections">
@@ -250,11 +254,13 @@ export default function Home() {
       <section className={`command-canvas ${section === "persona" ? "persona-active" : ""}`}>
         {section === "persona" && <PersonaPanel demeanor={demeanor} learning={learning} toggleDemeanor={(key) => setDemeanor((current) => ({ ...current, [key]: !current[key] }))} toggleLearning={(key) => setLearning((current) => ({ ...current, [key]: !current[key] }))} openPermissions={() => setSection("permissions")} />}
         {section === "api" && <button className="api-guide-fab" onClick={() => setApiGuideOpen(true)}><KeyRound size={15} /> Where do I get keys?</button>}
-        <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "tools" ? "Tools & routing" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "notes" ? "Private notes" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
+        <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "tools" ? "Tools & routing" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "notes" ? "Private notes" : section === "autonomy" ? "Autonomy & change" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
 
         {section === "voice" && <><ExpressionPanel colourMode={colourMode} voiceStyle={voiceStyle} setColourMode={setColourMode} setVoiceStyle={setVoiceStyle} /><VoiceControls settings={voiceSettings} toggle={(key) => setVoiceSettings((current) => ({ ...current, [key]: !current[key] }))} /></>}
 
         {section === "notes" && <NotesPanel emotionallyAware={emotionallyAware} setEmotionallyAware={setEmotionallyAware} isAuthenticated={isAuthenticated} />}
+
+        {section === "autonomy" && <AutonomyPanel policy={backgroundPolicy} setPolicy={setBackgroundPolicy} appearance={appearance} setAppearance={setAppearance} openPermissions={() => setSection("permissions")} openApiVault={(category) => { setCatalogueFocus(category ?? null); setSection("api"); }} />}
 
         {section === "command" && <>
           <section className="hero-command" style={{ backgroundImage: `linear-gradient(90deg, rgba(5, 11, 24, .95) 18%, rgba(5,11,24,.42) 72%, rgba(5,11,24,.86)), url(${heroImage})` }}>

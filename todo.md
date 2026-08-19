@@ -84,4 +84,35 @@
 
 - [x] Replace duplicate provider-name React keys with stable category-scoped placeholders.
 - [x] Add regression coverage for duplicate provider placeholders and verify the browser console is clear.
-- [ ] Save a checkpoint and deliver the duplicate-key repair.
+- [x] Save a checkpoint and deliver the duplicate-key repair.
+- [x] Deliver the duplicate-key repair with its saved checkpoint attachment and validation summary.
+
+## Consent-First Background & Evolution Model
+
+- [x] Add an explicit user consent control for background readiness, listening, and permitted action execution, with clear stop and visual-result preferences.
+- [x] Add a natural-language intent surface that accepts alternate wording, explains classification and clarification, and maintains the existing safety gate for consequential actions.
+- [x] Add a provider-orchestration surface that selects coordinated approved providers by function, fallback order, cost/quality preference, and resource availability without fabricating connections.
+- [x] Add a reviewable self-improvement request flow that routes proposed interface or capability changes to connected providers only as a plan, diff, and test proposal requiring user approval before any application change.
+- [x] Add user-editable appearance controls for typography, colour, density, motion, and visual-result preference.
+- [x] Create practical Windows build, deployment, local testing, and virtual-machine testing guidance for Arthur’s desktop prototype.
+- [x] Validate desktop and mobile interaction states.
+- [ ] Save the consent-first autonomy and Windows delivery-guidance checkpoint, then deliver the update.
+
+## Intent-to-Category Link Correction
+
+- [x] Map every natural-language intent result to a real API Vault catalogue category before delivery.
+
+## Autonomy Completion Corrections
+
+- [x] Add explicit action-execution consent and a visible pause-all control in the autonomy workspace.
+- [x] Wire provider-orchestration policy and room-availability inputs to update the selected route and unavailable-resource handling.
+- [x] Show a concrete provider route, scoped plan, diff summary, test list, and rollback point before a self-improvement proposal can be approved.
+
+## Provider Preference Completion
+
+- [x] Add an explicit cost-versus-quality preference control that changes the provider route preview while retaining the configured fallback order and resource checks.
+
+## Provider Chain Stability Correction
+
+- [x] Preserve the declared primary → support → fallback chain while rendering a separate cost-versus-quality recommendation and availability-aware next-step state.
+- [x] Add regression coverage proving fallback-chain stability alongside preference-based recommendations and resource-gate handling.
