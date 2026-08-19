@@ -133,4 +133,13 @@
 - [x] Add the requested security-intelligence provider placeholders under a review-required defensive category.
 - [x] Preserve provider purpose, credential pattern, ownership, connection state, and explicit non-invasive usage boundaries.
 - [x] Add regression coverage for provider count, uniqueness, and review-required routing.
-- [ ] Validate the updated API Vault on desktop and mobile, save a checkpoint, and deliver the update.
+- [x] Validate the updated API Vault on desktop and mobile, save a checkpoint, and deliver the update.
+
+## Consent-Gated Defensive Lookup Activation
+
+- [x] Add an explicit enable/disable control for passive defensive-intelligence lookups.
+- [x] Require a user-requested, single-item approval before preparing any permitted enrichment lookup.
+- [x] Keep scanning, exploitation, credential testing, malware handling, and automatic actions visibly blocked.
+- [x] Add regression coverage and validate the consent-gated defensive lookup interface.
+- [x] Ensure a permitted lookup becomes prepared only after its single-item approval, then rerun the consent and interface validation.
+- [ ] Save a checkpoint and deliver the enabled defensive lookup update.
