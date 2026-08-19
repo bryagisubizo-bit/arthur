@@ -199,4 +199,4 @@
 - [x] Add password setup, confirmation, secure local storage, and an access gate before the protected Spatial workspace is opened.
 - [x] Add optional local face-enrolment and verification states with camera indicators, explicit consent, no uploaded biometric data, and password fallback; do not claim security parity with Windows Hello.
 - [x] Add browser-preview states, desktop regression coverage, documentation, and a credential-free source bundle.
-- [ ] Save a checkpoint and deliver the protected Spatial-room expansion.
+- [x] Save a checkpoint and deliver the protected Spatial-room expansion.
