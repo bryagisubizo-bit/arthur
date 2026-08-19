@@ -53,3 +53,10 @@
 
 - [x] Add explicit emotional-conduct controls for tone matching, empathy/urgency acknowledgement, and the respectful-boundary policy.
 - [x] Show a responsible owner and explicit credential state on every API capability room.
+
+## API Resource Feedback
+
+- [x] Add a prominent, actionable missing-resource notification that appears when command routing needs an unavailable provider room.
+- [x] Add a credential-safe Test Connection action to each API capability room with idle, testing, configured, unavailable, and server-validation-needed states.
+- [x] Verify the resource warning and test states on desktop and mobile.
+- [ ] Save a new delivery checkpoint for the API Resource Feedback update and deliver that version to the user.
