@@ -59,4 +59,10 @@
 - [x] Add a prominent, actionable missing-resource notification that appears when command routing needs an unavailable provider room.
 - [x] Add a credential-safe Test Connection action to each API capability room with idle, testing, configured, unavailable, and server-validation-needed states.
 - [x] Verify the resource warning and test states on desktop and mobile.
-- [ ] Save a new delivery checkpoint for the API Resource Feedback update and deliver that version to the user.
+- [x] Save a new delivery checkpoint for the API Resource Feedback update and deliver that version to the user.
+
+## Lovable App-Development Capability
+
+- [x] Verify the supported Lovable integration surface against official documentation and preserve a credential-safe boundary.
+- [x] Add a Lovable app-development capability room with its function, owner, connection status, safe test state, and setup guidance.
+- [ ] Verify the new room on desktop and mobile, save a checkpoint, and deliver the update.
