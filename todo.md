@@ -180,4 +180,4 @@
 - [x] Add Home Assistant-style smart-home connection settings and review-required device-action placeholders; do not initiate network discovery or device control automatically.
 - [x] Add consent-based personal-learning and own-voice-cloning request states without automatic camera/microphone recording or third-party voice imitation.
 - [x] Test consent boundaries and user flows, rebuild and scan the credential-free Windows source bundle, and update setup/troubleshooting documentation.
-- [ ] Save a checkpoint and deliver the expanded Windows source bundle.
+- [x] Save a checkpoint and deliver the expanded Windows source bundle.
