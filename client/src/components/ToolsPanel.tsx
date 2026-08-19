@@ -1,7 +1,8 @@
 /**
  * Orbital Command Atelier: clipped operational cards, explicit consent labels, and no implied remote control.
  */
-import { useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
+import { prepareSymptomGuidance, type SymptomGuidance } from "@/lib/symptomSupport";
 import {
   AppWindow,
   Camera,
@@ -10,10 +11,13 @@ import {
   Clock3,
   FileSearch,
   Gauge,
+  Hand,
+  HeartPulse,
   History,
   Mic,
   MonitorCog,
   MousePointer2,
+  MoveHorizontal,
   Power,
   RefreshCw,
   Route,
@@ -22,6 +26,7 @@ import {
   ShieldCheck,
   Sparkles,
   TimerReset,
+  Trash2,
   Volume2,
   Webhook,
   Wifi,
@@ -80,7 +85,56 @@ export default function ToolsPanel() {
   const [history, setHistory] = useState(initialHistory);
   const [smartHomeProvider, setSmartHomeProvider] = useState("Home Assistant");
   const [discoveryReviewEnabled, setDiscoveryReviewEnabled] = useState(false);
+  const [spatialCards, setSpatialCards] = useState(["Research field", "System diagnostics", "Private note", "Voice signal", "Smart-home review"]);
+  const [selectedSpatialCard, setSelectedSpatialCard] = useState("Research field");
+  const [lastDiscardedCard, setLastDiscardedCard] = useState<{ label: string; index: number } | null>(null);
+  const [spatialZoom, setSpatialZoom] = useState(100);
+  const [gestureConsent, setGestureConsent] = useState(false);
+  const [symptomText, setSymptomText] = useState("");
+  const [symptomGuidance, setSymptomGuidance] = useState<SymptomGuidance | null>(null);
+  const dragCard = useRef<string | null>(null);
+  const touchOrigin = useRef<{ x: number; y: number } | null>(null);
   const active = routeModes.find((item) => item.name === activeRoute) ?? routeModes[0];
+
+  const moveSelection = (direction: number) => {
+    if (!spatialCards.length) return;
+    const index = Math.max(0, spatialCards.indexOf(selectedSpatialCard));
+    const next = spatialCards[(index + direction + spatialCards.length) % spatialCards.length];
+    setSelectedSpatialCard(next);
+  };
+
+  const discardSelectedSpatialCard = () => {
+    const index = spatialCards.indexOf(selectedSpatialCard);
+    if (index < 0) return toast.error("Select an Arthur workspace card first.");
+    const label = spatialCards[index];
+    setLastDiscardedCard({ label, index });
+    const remaining = spatialCards.filter((item) => item !== label);
+    setSpatialCards(remaining);
+    setSelectedSpatialCard(remaining[Math.min(index, Math.max(remaining.length - 1, 0))] ?? "");
+    toast("Card removed from the current preview layout.", { description: "It was not deleted and can be restored with Undo discard." });
+  };
+
+  const restoreDiscardedSpatialCard = () => {
+    if (!lastDiscardedCard) return;
+    setSpatialCards((current) => [...current.slice(0, lastDiscardedCard.index), lastDiscardedCard.label, ...current.slice(lastDiscardedCard.index)]);
+    setSelectedSpatialCard(lastDiscardedCard.label);
+    setLastDiscardedCard(null);
+    toast("Workspace card restored.");
+  };
+
+  const reorderSpatialCard = (target: string) => {
+    const source = dragCard.current;
+    if (!source || source === target) return;
+    setSpatialCards((current) => {
+      const from = current.indexOf(source);
+      const to = current.indexOf(target);
+      const next = [...current];
+      next.splice(from, 1);
+      next.splice(to, 0, source);
+      return next;
+    });
+    dragCard.current = null;
+  };
 
   const toggleAutomation = (id: number) => {
     setAutomations((current) => current.map((item) => item.id === id ? { ...item, enabled: !item.enabled } : item));
@@ -158,6 +212,26 @@ export default function ToolsPanel() {
         <div className="section-heading"><div><span className="eyebrow">Personalisation / own data only</span><h3>Samples are chosen, local, and revocable.</h3></div><Camera size={19} /></div>
         <p className="tools-intro">Arthur will not collect every camera or microphone detail. A user can deliberately select a local photo or a short own-voice sample in the desktop app, set a retention period, and review a separate request before a configured developer-owned provider receives anything.</p>
         <div className="smart-home-actions"><button className="outline-button" onClick={() => toast("Camera-style proposal requires an explicit local file choice.", { description: "The preview never opens a camera or accesses images." })}>Review camera-style boundary <Camera size={15} /></button><button className="outline-button" onClick={() => toast("Own-voice proposal requires fresh consent and an imported local sample.", { description: "Arthur cannot clone another person’s voice and never uploads a sample from this preview." })}>Review own-voice boundary <Mic size={15} /></button></div>
+      </section>
+
+      <section className="tools-panel spatial-workspace-review">
+        <div className="section-heading"><div><span className="eyebrow">Touch & spatial workspace / Arthur only</span><h3>Arrange the field with direct touch.</h3></div><Hand size={19} /></div>
+        <p className="tools-intro">On a touch screen, swipe this card field left or right to choose an Arthur card, drag cards to change their order, and pinch or use the controls to adjust the in-app canvas scale. These inputs never control another Windows application or move the system pointer.</p>
+        <div className="spatial-canvas" style={{ "--spatial-scale": spatialZoom / 100 } as CSSProperties} onTouchStart={(event) => { const touch = event.touches[0]; touchOrigin.current = touch ? { x: touch.clientX, y: touch.clientY } : null; }} onTouchEnd={(event) => { const origin = touchOrigin.current; const touch = event.changedTouches[0]; if (origin && touch && Math.abs(touch.clientX - origin.x) > 56) { moveSelection(touch.clientX > origin.x ? -1 : 1); toast("Touch swipe selected a neighbouring Arthur workspace card."); } touchOrigin.current = null; }} onWheel={(event) => { if (event.ctrlKey) { event.preventDefault(); setSpatialZoom((current) => Math.min(150, Math.max(70, current + (event.deltaY < 0 ? 5 : -5)))); } }}>
+          <div className="spatial-canvas-meta"><span><MoveHorizontal size={15} /> {selectedSpatialCard || "No card selected"}</span><span>{spatialZoom}% canvas</span></div>
+          <div className="spatial-card-strip" aria-label="Touch-reorderable Arthur workspace cards">{spatialCards.map((card) => <button key={card} draggable onDragStart={() => { dragCard.current = card; }} onDragOver={(event) => event.preventDefault()} onDrop={() => reorderSpatialCard(card)} onClick={() => setSelectedSpatialCard(card)} className={`spatial-card ${selectedSpatialCard === card ? "active" : ""}`} aria-pressed={selectedSpatialCard === card}><span>{String(spatialCards.indexOf(card) + 1).padStart(2, "0")}</span><b>{card}</b></button>)}</div>
+        </div>
+        <div className="spatial-controls"><button className="outline-button" onClick={() => moveSelection(-1)}>Previous card</button><button className="outline-button" onClick={() => moveSelection(1)}>Next card</button><label>Zoom<input type="range" min="70" max="150" value={spatialZoom} onChange={(event) => setSpatialZoom(Number(event.target.value))} /></label><button className="outline-button" disabled={!selectedSpatialCard} onClick={discardSelectedSpatialCard}><Trash2 size={15} /> Discard selected</button><button className="text-button" disabled={!lastDiscardedCard} onClick={restoreDiscardedSpatialCard}>Undo discard</button></div>
+        <div className="gesture-consent-callout"><Hand size={18} /><div><b>Camera-based air gestures are optional and off.</b><p>Enable only in the Windows prototype after selecting a local camera and accepting the visible local-only camera indicator. The preview neither opens a camera nor reads video.</p></div><label className="review-choice"><input type="checkbox" checked={gestureConsent} onChange={(event) => setGestureConsent(event.target.checked)} /> I want to review local air-gesture consent.</label><button className="outline-button" onClick={() => toast(gestureConsent ? "Desktop consent proposal prepared." : "Confirm the separate consent acknowledgement first.", { description: gestureConsent ? "The installed prototype processes transient local hand landmarks only; it does not retain video or biometric templates." : "A camera never opens from this preview." })}>Prepare consent review</button></div>
+      </section>
+
+      <section className="tools-panel symptom-support-review">
+        <div className="section-heading"><div><span className="eyebrow">Health support / guidance, not diagnosis</span><h3>Prepare clear information for appropriate care.</h3></div><HeartPulse size={19} /></div>
+        <p className="tools-intro">Arthur cannot diagnose a disease or replace a clinician. It can provide cautious information and encourage urgent care when a description contains potential warning signs. Your text is not saved in this preview.</p>
+        <div className="symptom-emergency-note"><CircleAlert size={17} /><span>If there is severe chest pain, trouble breathing, stroke-like symptoms, severe allergic reaction, loss of consciousness, severe bleeding, or immediate danger, contact local emergency services now.</span></div>
+        <label className="symptom-entry">How are you feeling?<textarea value={symptomText} onChange={(event) => setSymptomText(event.target.value)} placeholder="Describe symptoms, when they began, and whether they are worsening. Arthur will not label a disease." /></label>
+        <div className="smart-home-actions"><button className="primary-button compact" onClick={() => setSymptomGuidance(prepareSymptomGuidance(symptomText))}>Prepare cautious guidance</button><button className="outline-button" onClick={() => { setSymptomText(""); setSymptomGuidance(null); }}>Clear private text</button></div>
+        {symptomGuidance && <div className={`symptom-guidance ${symptomGuidance.urgency.replace(/\s+/g, "-")}`} role="status"><span className="eyebrow">{symptomGuidance.urgency}</span><h4>{symptomGuidance.heading}</h4><p>{symptomGuidance.summary}</p><b>Next step: {symptomGuidance.nextStep}</b></div>}
       </section>
 
       <section className="automation-register">

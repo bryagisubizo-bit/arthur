@@ -181,3 +181,12 @@
 - [x] Add consent-based personal-learning and own-voice-cloning request states without automatic camera/microphone recording or third-party voice imitation.
 - [x] Test consent boundaries and user flows, rebuild and scan the credential-free Windows source bundle, and update setup/troubleshooting documentation.
 - [x] Save a checkpoint and deliver the expanded Windows source bundle.
+
+## Touch, Gesture & Health-Support Expansion
+
+- [x] Document touch, camera, spatial-tracking, data-retention, activation, and revoke boundaries for the gesture workspace.
+- [x] Add touch-first workspace controls for horizontal navigation, pinch/scroll zoom, drag-to-reorder, and discard with reversible, confirmed actions.
+- [x] Add a consent-gated local gesture control surface that never opens the camera, stores video, or controls the PC until the user explicitly enables it.
+- [x] Add a medically cautious symptom-support flow that is not a diagnosis, highlights urgent warning signs, and directs users to appropriate professional care.
+- [x] Add browser preview states, desktop-safe UI states, tests, documentation, and an updated credential-free Windows source bundle.
+- [ ] Save a checkpoint and deliver the touch, gesture, and health-support expansion.
