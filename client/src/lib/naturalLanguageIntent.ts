@@ -1,3 +1,5 @@
+import { languageFromPreferenceRequest } from "./languageLibrary";
+
 export type IntentKind =
   | "device-control"
   | "research"
@@ -151,6 +153,18 @@ export function assessNaturalLanguage(request: string): IntentAssessment {
       requiredRoom: "No room selected",
       consequence: "review",
       alternatePhrasing: [],
+    };
+  }
+
+  const selectedLanguage = languageFromPreferenceRequest(clean);
+  if (selectedLanguage) {
+    return {
+      kind: "language-preference",
+      label: "Reply-language preference",
+      summary: `Arthur recognised ${selectedLanguage.name} as a local conversation preference. It will not download a pack, turn on listening, translate text, or call a provider from this request.`,
+      requiredRoom: "Local profile preference — no provider call",
+      consequence: "review",
+      alternatePhrasing: ["Speak in Kinyarwanda", "Parle en français", "Speak in Arabic"],
     };
   }
 

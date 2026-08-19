@@ -236,3 +236,10 @@
 - [x] Add opt-in time-of-day greeting preferences that select a suitable opening or deliberate-wake greeting only while Arthur is already running; do not create a background scheduler or initiate speech on their own.
 - [x] Add an explicit local Do Not Disturb start/end schedule that suppresses non-essential greetings, with a visible active state and a user-controlled override.
 - [x] Add matching browser-preview states, desktop regression coverage, Windows guidance, a rebuilt credential-free source bundle, checkpoint, and delivery.
+
+## Broad Language Library & Multilingual Search
+
+- [x] Add a searchable broad language library with language name, ISO code, native label, writing system, and clear local-versus-provider readiness states; preserve the existing English, Kinyarwanda, French, and Kiswahili defaults.
+- [x] Add a user-selected active conversation language and a multilingual-search preparation flow that keeps a query in its chosen language, identifies when a translation or research provider is needed, and never performs a web search automatically.
+- [x] Add desktop and browser-preview controls for favourites, language discovery, query preparation, review/copy states, and offline language-pack guidance without auto-installing packages or transmitting text.
+- [x] Add regression coverage, Windows setup guidance, a rebuilt credential-free source bundle, checkpoint, and delivery.

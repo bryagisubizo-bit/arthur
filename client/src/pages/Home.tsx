@@ -6,7 +6,9 @@ import "./greeting-panel.css";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { findProviderNeed } from "@/lib/commandRouting";
 import { defaultGreetingScripts, isInLocalTimeWindow, renderGreeting, type GreetingKind } from "@/lib/greetingSchedule";
+import { languageFromPreferenceRequest } from "@/lib/languageLibrary";
 import NotesPanel from "@/components/NotesPanel";
+import LanguageLibraryPanel from "@/components/LanguageLibraryPanel";
 import CapabilityRegistry from "@/components/CapabilityRegistry";
 import ProviderCatalogue from "@/components/ProviderCatalogue";
 import ExpressionPanel, { type ColourMode, type VoiceStyle } from "@/components/ExpressionPanel";
@@ -54,7 +56,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type Section = "command" | "tools" | "voice" | "persona" | "notes" | "autonomy" | "api" | "permissions" | "updates";
+type Section = "command" | "tools" | "voice" | "persona" | "notes" | "autonomy" | "languages" | "api" | "permissions" | "updates";
 type ProviderCard = [string, string, string, string];
 type CommandPlanPreview = { intent: string; summary: string; command: string; risk: "low" | "medium" | "blocked"; confirmation: boolean; allowed: boolean; reason?: string; missingRoom?: string };
 
@@ -81,6 +83,7 @@ const nav = [
   ["persona", Bot, "Conduct & memory"],
   ["notes", FolderCog, "Private notes"],
   ["autonomy", Radar, "Autonomy & change"],
+  ["languages", Languages, "Language library"],
   ["api", KeyRound, "API vault"],
   ["permissions", ShieldCheck, "Permissions"],
   ["updates", UploadCloud, "Updates"],
@@ -121,12 +124,7 @@ function planCommandPreview(request: string): CommandPlanPreview {
 }
 
 function requestedLanguage(input: string): string | null {
-  if (!/\b(speak|talk|reply|parle|vuga|ongea|sema)\b/.test(input)) return null;
-  if (/\b(kinyarwanda|ikinyarwanda|rwanda)\b/.test(input)) return "Kinyarwanda";
-  if (/\b(english|anglais|icyongereza)\b/.test(input)) return "English";
-  if (/\b(french|français|francais)\b/.test(input)) return "French";
-  if (/\b(kiswahili|swahili|kiwahili)\b/.test(input)) return "Kiswahili";
-  return null;
+  return languageFromPreferenceRequest(input)?.name ?? null;
 }
 
 function VoiceSignalDock({ open, listening, close }: { open: boolean; listening: boolean; close: () => void }) {
@@ -311,7 +309,7 @@ export default function Home() {
       <section className={`command-canvas ${section === "persona" ? "persona-active" : ""}`}>
         {section === "persona" && <PersonaPanel demeanor={demeanor} learning={learning} toggleDemeanor={(key) => setDemeanor((current) => ({ ...current, [key]: !current[key] }))} toggleLearning={(key) => setLearning((current) => ({ ...current, [key]: !current[key] }))} openPermissions={() => setSection("permissions")} />}
         {section === "api" && <button className="api-guide-fab" onClick={() => setApiGuideOpen(true)}><KeyRound size={15} /> Where do I get keys?</button>}
-        <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "tools" ? "Tools & routing" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "notes" ? "Private notes" : section === "autonomy" ? "Autonomy & change" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
+        <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "tools" ? "Tools & routing" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "notes" ? "Private notes" : section === "autonomy" ? "Autonomy & change" : section === "languages" ? "Language library" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
         <button className={`voice-signal-fab ${listening ? "active" : ""}`} onClick={() => setSignalOpen((current) => !current)} aria-expanded={signalOpen} aria-label="Open local voice signal"><span><Mic size={17} /></span><b>{listening ? "VOICE ACTIVE" : "VOICE SIGNAL"}</b></button>
         <VoiceSignalDock open={signalOpen} listening={listening} close={() => setSignalOpen(false)} />
 
@@ -321,9 +319,11 @@ export default function Home() {
 
         {section === "autonomy" && <AutonomyPanel policy={backgroundPolicy} setPolicy={setBackgroundPolicy} appearance={appearance} setAppearance={setAppearance} setColourMode={setColourMode} openPermissions={() => setSection("permissions")} openApiVault={(category) => { setCatalogueFocus(category ?? null); setSection("api"); }} />}
 
+        {section === "languages" && <LanguageLibraryPanel activeLanguage={language} setActiveLanguage={setLanguage} />}
+
         {section === "command" && <>
           <section className="hero-command" style={{ backgroundImage: `linear-gradient(90deg, rgba(5, 11, 24, .95) 18%, rgba(5,11,24,.42) 72%, rgba(5,11,24,.86)), url(${heroImage})` }}>
-            <div className="hero-copy"><div className="eyebrow light">Arthur is standing by</div><h2>{greeting}</h2><p>Voice-first assistance, carefully governed. Ask in {language}, English, French, or Kiswahili.</p><div className="hero-meta"><StatusPill>Wake word ready</StatusPill><span><LockKeyhole size={14} /> Spoken replies by default</span></div></div>
+            <div className="hero-copy"><div className="eyebrow light">Arthur is standing by</div><h2>{greeting}</h2><p>Voice-first assistance, carefully governed. Your active language is {language}; use the Language library to select another before Arthur prepares speech or research.</p><div className="hero-meta"><StatusPill>Wake word ready</StatusPill><span><LockKeyhole size={14} /> Spoken replies by default</span></div></div>
             <div className={`listening-orb ${listening ? "listening" : ""}`}><span className="orbit orbit-a" /><span className="orbit orbit-b" /><span className="orb-core"><Mic size={27} /></span><span className="orb-label">{listening ? "LISTENING" : "ARTHUR"}</span></div>
           </section>
           <GreetingPreviewPanel name={name} title={title} spokenReplies={spokenReplies} wakeGreeting={wakeGreeting} message={greetingMessage} scripts={greetingScripts} activeKind={activeGreetingKind} setActiveKind={setActiveGreetingKind} updateScript={(value) => setGreetingScripts((current) => ({ ...current, [activeGreetingKind]: value.slice(0, 240) }))} restoreScript={() => setGreetingScripts((current) => ({ ...current, [activeGreetingKind]: defaultGreetingScripts[activeGreetingKind] }))} timeOfDay={timeOfDayGreetings} setTimeOfDay={setTimeOfDayGreetings} quietHours={quietHoursEnabled} setQuietHours={setQuietHoursEnabled} quietStart={quietStart} setQuietStart={setQuietStart} quietEnd={quietEnd} setQuietEnd={setQuietEnd} preview={previewGreeting} toggleSpokenReplies={() => setSpokenReplies((current) => !current)} toggleWakeGreeting={() => setWakeGreeting((current) => !current)} />
@@ -338,7 +338,7 @@ export default function Home() {
 
         {section === "tools" && <ToolsPanel />}
 
-        {section === "voice" && <section className="voice-layout"><div className="voice-stage" style={{ backgroundImage: `linear-gradient(145deg, rgba(4,10,24,.84), rgba(4,10,24,.38)), url(${voiceImage})` }}><div className="voice-stage-copy"><span className="eyebrow light">Voice profile / local wake word</span><h2>{language} is your native setting.</h2><p>Arthur listens for the language you use and replies in a natural voice. The production desktop app keeps the wake word local.</p><div className="voice-stage-actions"><button className="primary-button" onClick={() => setListening(!listening)}><Waves size={17} /> {listening ? "Pause listening" : "Preview wake word"}</button><button className="outline-button" onClick={() => setWakeWordOpen(true)}><TerminalSquare size={16} /> Review local setup</button></div></div><div className={`voice-orbital-anchor ${listening ? "active" : ""}`} aria-label={listening ? "Arthur is listening" : "Arthur is ready"}><span className="voice-orbit voice-orbit-one" /><span className="voice-orbit voice-orbit-two" /><span className="voice-orb-core"><Mic size={27} /></span><span className="voice-orb-state">{listening ? "LISTENING" : "READY"}</span></div><div className="voice-wave" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></div></div><div className="voice-options"><div className="section-heading"><div><span className="eyebrow">Language routing</span><h3>Natural switching</h3></div><Languages size={19} /></div>{["Kinyarwanda", "English", "French", "Kiswahili"].map((item) => <div className="language-row" key={item}><span className={`language-radio ${language === item ? "active" : ""}`} /><div><b>{item}</b><small>{language === item ? "Native profile language" : "Available when spoken"}</small></div>{language === item && <StatusPill>Default</StatusPill>}</div>)}<button className="outline-button full" onClick={() => toast("Arthur would save a new pronunciation note to the active profile.")}> <Plus size={16} /> Teach a pronunciation</button></div></section>}
+        {section === "voice" && <section className="voice-layout"><div className="voice-stage" style={{ backgroundImage: `linear-gradient(145deg, rgba(4,10,24,.84), rgba(4,10,24,.38)), url(${voiceImage})` }}><div className="voice-stage-copy"><span className="eyebrow light">Voice profile / local wake word</span><h2>{language} is your active setting.</h2><p>Arthur keeps the wake word local. Speech in other library languages needs a separately approved local pack or provider.</p><div className="voice-stage-actions"><button className="primary-button" onClick={() => setListening(!listening)}><Waves size={17} /> {listening ? "Pause listening" : "Preview wake word"}</button><button className="outline-button" onClick={() => setWakeWordOpen(true)}><TerminalSquare size={16} /> Review local setup</button></div></div><div className={`voice-orbital-anchor ${listening ? "active" : ""}`} aria-label={listening ? "Arthur is listening" : "Arthur is ready"}><span className="voice-orbit voice-orbit-one" /><span className="voice-orbit voice-orbit-two" /><span className="voice-orb-core"><Mic size={27} /></span><span className="voice-orb-state">{listening ? "LISTENING" : "READY"}</span></div><div className="voice-wave" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></div></div><div className="voice-options"><div className="section-heading"><div><span className="eyebrow">Language routing</span><h3>Primary fast lane</h3></div><Languages size={19} /></div>{["Kinyarwanda", "English", "French", "Kiswahili"].map((item) => <div className="language-row" key={item}><span className={`language-radio ${language === item ? "active" : ""}`} /><div><b>{item}</b><small>{language === item ? "Active conversation language" : "Profile-ready option"}</small></div>{language === item && <StatusPill>Active</StatusPill>}</div>)}<button className="outline-button full" onClick={() => setSection("languages")}> <Languages size={16} /> Browse all language entries</button><button className="outline-button full" onClick={() => toast("Arthur would save a new pronunciation note to the active profile.")}> <Plus size={16} /> Teach a pronunciation</button></div></section>}
 
         {section === "api" && <section className="api-layout"><CapabilityRegistry openIntegration={() => setIntegrationOpen(true)} /><ProviderCatalogue openIntegration={() => setIntegrationOpen(true)} focusCategory={catalogueFocus} clearFocus={() => setCatalogueFocus(null)} /><div className="api-banner"><div><span className="eyebrow">Developer-controlled integrations</span><h2>Parallel provider boxes, one safe vault.</h2><p>Use this preview to inspect the setup flow. It does not transmit, save, or test any secret.</p></div><div className="api-banner-seal"><KeyRound size={25} /><span>Placeholder-only<br/>preview</span></div></div><div className="provider-grid">{[...providerCards, ...customIntegrations].map(([label, provider, detail, key]) => <article className="provider-card" key={label}><div className="provider-heading"><span className="provider-icon"><Sparkles size={16} /></span><div><h3>{label}</h3><p>{detail}</p></div><StatusPill tone="gray">Not connected</StatusPill></div><label>Provider<select defaultValue={provider}><option>{provider}</option><option>Custom provider</option><option>Disabled</option></select></label>{provider === "Supabase" ? <><label>Project URL<input type="url" name="supabase-url" placeholder="https://your-project.supabase.co" /></label><label>Publishable key<input type="password" name="supabase-publishable-key" placeholder="sb_publishable_..." /></label></> : provider === "openWakeWord" ? <div className="wakeword-card-note"><StatusPill tone="amber">Local install required</StatusPill><p>The desktop app requests approval before opening Command Prompt or enabling tray listening.</p><button className="outline-button" onClick={() => setWakeWordOpen(true)}><TerminalSquare size={15} /> Review setup</button></div> : <label>Developer key<input type="password" name={key} placeholder="Stored locally in the desktop app" /></label>}<div className="provider-actions"><button className="outline-button" onClick={() => toast("Connection test is intentionally disabled in this browser preview.")}>Test</button><button className="text-button" onClick={() => toast(`${label} is marked as a configured placeholder.`)}>Save placeholder</button></div></article>)}</div><button className="add-integration" onClick={() => setIntegrationOpen(true)}> <Plus size={18} /> Add an approved integration <ChevronRight size={17} /></button></section>}
 
