@@ -89,6 +89,11 @@ function planCommandPreview(request: string): CommandPlanPreview {
   const blocked = ["hack", "breach", "exploit", "keylogger", "steal password", "dump credentials", "disable antivirus", "disable firewall", "reverse shell", "scan network", "scan public", "ransomware", "phishing"];
   if (!input) return { intent: "empty", summary: "Arthur needs a specific approved computer task.", command: "—", risk: "blocked", confirmation: false, allowed: false, reason: "No request supplied." };
   if (blocked.some((term) => input.includes(term))) return { intent: "blocked request", summary: "Arthur will not prepare intrusion, evasion, credential, or attack activity.", command: "—", risk: "blocked", confirmation: false, allowed: false, reason: "Unauthorized or harmful system access is not available." };
+  const language = requestedLanguage(input);
+  if (language) return { intent: "reply language preference", summary: `Switch Arthur’s local reply preference to ${language}. The desktop prototype repeats the choice and does not make a provider call.`, command: `profile.native_language = ${language}`, risk: "low", confirmation: false, allowed: true };
+  if (/\b(text|message|send (?:a )?(?:whatsapp )?message|whatsapp someone)\b/.test(input)) return { intent: "WhatsApp message draft", summary: "Prepare a recipient and exact message draft only. Arthur will not open a conversation, select a contact, or send it.", command: "message-draft://whatsapp", risk: "medium", confirmation: true, allowed: true };
+  if (/\b(open|launch|start)\s+(?:the )?camera\b/.test(input)) return { intent: "launch Camera", summary: "Open the installed Windows Camera app through its fixed URI after your approval.", command: "ms-camera:", risk: "medium", confirmation: true, allowed: true };
+  if (/\b(open|launch|start)\s+(?:the )?whatsapp\b/.test(input)) return { intent: "launch WhatsApp", summary: "Open the installed WhatsApp app through its fixed URI after your approval.", command: "whatsapp:", risk: "medium", confirmation: true, allowed: true };
   const missingProvider = findProviderNeed(input);
   if (missingProvider) return { intent: "resource unavailable", summary: "Arthur found the required capability, but no approved resource is connected.", command: "—", risk: "blocked", confirmation: false, allowed: false, missingRoom: missingProvider.room, reason: missingProvider.reason };
   const isLinux = /\b(kali|linux|wsl)\b/.test(input);
@@ -111,6 +116,20 @@ function planCommandPreview(request: string): CommandPlanPreview {
   if (["lock computer", "lock pc", "lock my computer"].some((term) => input.includes(term))) return { intent: "lock workstation", summary: "Lock this Windows session. Arthur requires your explicit approval before taking this action.", command: "rundll32.exe user32.dll,LockWorkStation", risk: "medium", confirmation: true, allowed: true };
   for (const [phrases, template] of templates) if (phrases.some((term) => input.includes(term))) return { ...template, risk: "low", confirmation: false, allowed: true };
   return { intent: "unreviewed request", summary: "Arthur has no reviewed command template for that request.", command: "—", risk: "blocked", confirmation: false, allowed: false, reason: "Add and test an explicit template in the developer command registry; raw generated shell text is never run." };
+}
+
+function requestedLanguage(input: string): string | null {
+  if (!/\b(speak|talk|reply|parle|vuga|ongea|sema)\b/.test(input)) return null;
+  if (/\b(kinyarwanda|ikinyarwanda|rwanda)\b/.test(input)) return "Kinyarwanda";
+  if (/\b(english|anglais|icyongereza)\b/.test(input)) return "English";
+  if (/\b(french|français|francais)\b/.test(input)) return "French";
+  if (/\b(kiswahili|swahili|kiwahili)\b/.test(input)) return "Kiswahili";
+  return null;
+}
+
+function VoiceSignalDock({ open, listening, close }: { open: boolean; listening: boolean; close: () => void }) {
+  if (!open) return null;
+  return <aside className="voice-signal-dock-panel" role="status" aria-live="polite"><div className="voice-signal-dock-copy"><span className="eyebrow">Local command signal</span><h2>{listening ? "Arthur is in command mode." : "Arthur is standing by."}</h2><p>This preview animates a visual cue only. In the Windows prototype, a visualizer receives a transient amplitude number only while the user has explicitly enabled local listening. It does not record or upload sound.</p><button className="outline-button" onClick={close}>Minimise signal</button></div><div className={`voice-signal-dock-orb ${listening ? "active" : ""}`}><span /><span /><b>{listening ? "LISTENING" : "READY"}</b></div></aside>;
 }
 
 function StatusPill({ tone = "blue", children }: { tone?: "blue" | "green" | "amber" | "gray"; children: React.ReactNode }) {
@@ -221,6 +240,7 @@ export default function Home() {
   const [commandPlan, setCommandPlan] = useState<CommandPlanPreview | null>(null);
   const [automationPaused, setAutomationPaused] = useState(false);
   const [voiceSettings, setVoiceSettings] = useState({ microphone: true, speaker: true, screenAnalysis: false, fileAnalysis: false });
+  const [signalOpen, setSignalOpen] = useState(false);
   const [colourMode, setColourMode] = useState<ColourMode>("cobalt");
   const [voiceStyle, setVoiceStyle] = useState<VoiceStyle>("diplomatic");
   const [emotionallyAware, setEmotionallyAware] = useState(true);
@@ -233,6 +253,10 @@ export default function Home() {
     if (!command.trim()) return toast.error("Give Arthur something to prepare first.");
     const plan = planCommandPreview(command);
     setCommandPlan(plan);
+    setSignalOpen(true);
+    setListening(true);
+    const nextLanguage = requestedLanguage(command.toLowerCase());
+    if (nextLanguage) setLanguage(nextLanguage);
     if (plan.allowed) toast.success("Arthur prepared a reviewed local command plan.", { description: "This browser preview never executes a command or contacts a provider." });
     else toast.error("Arthur declined that command request.", { description: plan.reason });
   };
@@ -255,6 +279,8 @@ export default function Home() {
         {section === "persona" && <PersonaPanel demeanor={demeanor} learning={learning} toggleDemeanor={(key) => setDemeanor((current) => ({ ...current, [key]: !current[key] }))} toggleLearning={(key) => setLearning((current) => ({ ...current, [key]: !current[key] }))} openPermissions={() => setSection("permissions")} />}
         {section === "api" && <button className="api-guide-fab" onClick={() => setApiGuideOpen(true)}><KeyRound size={15} /> Where do I get keys?</button>}
         <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "tools" ? "Tools & routing" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "notes" ? "Private notes" : section === "autonomy" ? "Autonomy & change" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
+        <button className={`voice-signal-fab ${listening ? "active" : ""}`} onClick={() => setSignalOpen((current) => !current)} aria-expanded={signalOpen} aria-label="Open local voice signal"><span><Mic size={17} /></span><b>{listening ? "VOICE ACTIVE" : "VOICE SIGNAL"}</b></button>
+        <VoiceSignalDock open={signalOpen} listening={listening} close={() => setSignalOpen(false)} />
 
         {section === "voice" && <><ExpressionPanel colourMode={colourMode} voiceStyle={voiceStyle} setColourMode={setColourMode} setVoiceStyle={setVoiceStyle} /><VoiceControls settings={voiceSettings} toggle={(key) => setVoiceSettings((current) => ({ ...current, [key]: !current[key] }))} /></>}
 

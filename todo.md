@@ -169,4 +169,15 @@
 - [x] Diagnose the current voice-output, microphone, and openWakeWord integration paths and identify missing runtime dependencies, permissions, or configuration states.
 - [x] Add a consent-first voice diagnostic and guided wake-word configuration surface with explicit test states and no background listening by default.
 - [x] Test the revised desktop voice controls, rebuild the credential-free Windows source bundle, and update the Windows troubleshooting guide.
-- [ ] Save a checkpoint and deliver the revised voice and interaction source bundle.
+- [x] Save a checkpoint and deliver the revised voice and interaction source bundle.
+
+## Consent-First Local Intelligence Expansion
+
+- [x] Define and document opt-in retention, indicator, review, and revocation boundaries for microphone, camera, personal learning, voice cloning, messages, and smart-home actions.
+- [x] Add multilingual language-switch preferences and natural-language planning for safe local application actions, with confirmation before messages or consequential actions.
+- [x] Add an active command-mode audio visualizer room, extend the selected workspace colour across desktop pages, and add scoped voice/pitch preferences.
+- [x] Add real GitHub release metadata checking with explicit repository configuration, a separate user-approved installer download path, and a clear unavailable/no-release state.
+- [x] Add Home Assistant-style smart-home connection settings and review-required device-action placeholders; do not initiate network discovery or device control automatically.
+- [x] Add consent-based personal-learning and own-voice-cloning request states without automatic camera/microphone recording or third-party voice imitation.
+- [x] Test consent boundaries and user flows, rebuild and scan the credential-free Windows source bundle, and update setup/troubleshooting documentation.
+- [ ] Save a checkpoint and deliver the expanded Windows source bundle.

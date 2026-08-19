@@ -19,6 +19,27 @@ describe("natural language intent routing", () => {
     expect(result.consequence).toBe("proposal");
   });
 
+  it("recognises supported reply-language requests as an offline local preference", () => {
+    const result = assessNaturalLanguage("Arthur, vuga mu Kinyarwanda");
+    expect(result.kind).toBe("language-preference");
+    expect(result.requiredRoom).toContain("Local profile preference");
+  });
+
+  it("keeps messaging as a reviewable draft and app routes as reviewed actions", () => {
+    const draft = assessNaturalLanguage("Text someone on WhatsApp");
+    expect(draft.kind).toBe("message-draft");
+    expect(draft.consequence).toBe("review");
+    expect(draft.summary).toContain("never selects a contact");
+    expect(assessNaturalLanguage("open camera").kind).toBe("app-launch");
+  });
+
+  it("keeps visual feedback local and voice cloning proposal-gated", () => {
+    expect(assessNaturalLanguage("show the voice orb").kind).toBe("voice-visualizer");
+    const cloning = assessNaturalLanguage("clone my voice");
+    expect(cloning.kind).toBe("voice-cloning");
+    expect(cloning.consequence).toBe("proposal");
+  });
+
   it("requests clarification rather than fabricating a route", () => {
     expect(assessNaturalLanguage("Do the thing").kind).toBe("clarification");
   });

@@ -71,11 +71,15 @@ const initialHistory = [
   ["09:19", "Wake-word setting", "Listening remains locally controlled", "Local only"],
 ];
 
+const smartHomeProviders = ["Home Assistant", "Philips Hue", "SmartThings", "Tuya", "MQTT adapter", "Other local hub"];
+
 export default function ToolsPanel() {
   const [activeRoute, setActiveRoute] = useState("Conversation");
   const [privacyMode, setPrivacyMode] = useState(false);
   const [automations, setAutomations] = useState(initialAutomations);
   const [history, setHistory] = useState(initialHistory);
+  const [smartHomeProvider, setSmartHomeProvider] = useState("Home Assistant");
+  const [discoveryReviewEnabled, setDiscoveryReviewEnabled] = useState(false);
   const active = routeModes.find((item) => item.name === activeRoute) ?? routeModes[0];
 
   const toggleAutomation = (id: number) => {
@@ -139,6 +143,22 @@ export default function ToolsPanel() {
           <button className="outline-button full" onClick={() => toast("Preview diagnostic completed.", { description: "Live checks belong to the installed desktop assistant after permissions are granted." })}>Run preview check <TimerReset size={15} /></button>
         </section>
       </div>
+
+      <section className="tools-panel smart-home-review">
+        <div className="section-heading"><div><span className="eyebrow">Smart-home / review before connection</span><h3>Choose a hub, then approve its declared scope.</h3></div><Gauge size={19} /></div>
+        <p className="tools-intro">This preview does not scan a local network, contact a hub, enumerate devices, or control anything. The desktop app can only use an explicitly configured hub API after its endpoint, developer credential, and one selected action have been reviewed.</p>
+        <div className="smart-home-options" role="group" aria-label="Smart-home provider choice">
+          {smartHomeProviders.map((provider) => <button key={provider} className={smartHomeProvider === provider ? "active" : ""} onClick={() => setSmartHomeProvider(provider)} aria-pressed={smartHomeProvider === provider}>{provider}</button>)}
+        </div>
+        <label className="review-choice"><input type="checkbox" checked={discoveryReviewEnabled} onChange={(event) => setDiscoveryReviewEnabled(event.target.checked)} /> Permit a later review of this hub’s own authorised-device list. It does not begin discovery.</label>
+        <div className="smart-home-actions"><button className="outline-button" onClick={() => toast("Connection proposal prepared.", { description: `${smartHomeProvider} remains disconnected. Add its endpoint and developer-owned credential in the API Vault, then review the device scope in the installed desktop app.` })}>Prepare connection proposal <Route size={15} /></button><button className="outline-button" onClick={() => toast(discoveryReviewEnabled ? "Authorised-device review is eligible after configuration." : "Enable the separate review option first.", { description: "Arthur never performs network scans or automatic device discovery." })}>Review discovery boundary <ShieldCheck size={15} /></button></div>
+      </section>
+
+      <section className="tools-panel personalisation-review">
+        <div className="section-heading"><div><span className="eyebrow">Personalisation / own data only</span><h3>Samples are chosen, local, and revocable.</h3></div><Camera size={19} /></div>
+        <p className="tools-intro">Arthur will not collect every camera or microphone detail. A user can deliberately select a local photo or a short own-voice sample in the desktop app, set a retention period, and review a separate request before a configured developer-owned provider receives anything.</p>
+        <div className="smart-home-actions"><button className="outline-button" onClick={() => toast("Camera-style proposal requires an explicit local file choice.", { description: "The preview never opens a camera or accesses images." })}>Review camera-style boundary <Camera size={15} /></button><button className="outline-button" onClick={() => toast("Own-voice proposal requires fresh consent and an imported local sample.", { description: "Arthur cannot clone another person’s voice and never uploads a sample from this preview." })}>Review own-voice boundary <Mic size={15} /></button></div>
+      </section>
 
       <section className="automation-register">
         <div className="automation-heading"><div><span className="eyebrow">Automation registry / owned and auditable</span><h3>Named routines, never invisible rules.</h3><p>Each automation shows who owns it, when it may run, its limited scope, and whether it is currently paused.</p></div><button className="outline-button" onClick={() => { setAutomations((current) => current.map((item) => ({ ...item, enabled: false }))); toast("All preview automations paused."); }}><Power size={15} /> Pause all</button></div>

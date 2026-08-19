@@ -1,4 +1,15 @@
-export type IntentKind = "device-control" | "research" | "notes" | "appearance" | "self-improvement" | "clarification";
+export type IntentKind =
+  | "device-control"
+  | "research"
+  | "notes"
+  | "appearance"
+  | "self-improvement"
+  | "language-preference"
+  | "app-launch"
+  | "message-draft"
+  | "voice-visualizer"
+  | "voice-cloning"
+  | "clarification";
 
 export type IntentAssessment = {
   kind: IntentKind;
@@ -11,6 +22,64 @@ export type IntentAssessment = {
 };
 
 const intentPatterns: Array<{ pattern: RegExp; assessment: IntentAssessment }> = [
+  {
+    pattern: /\b(speak|talk|reply|parle|vuga|ongea|sema)\s+(in\s+|mu\s+|en\s+)?(kinyarwanda|ikinyarwanda|english|anglais|french|fran[çc]ais|kiswahili|swahili)\b/i,
+    assessment: {
+      kind: "language-preference",
+      label: "Reply-language preference",
+      summary: "Arthur recognised a request to change its reply language. The desktop prototype repeats and saves the selected local preference; spoken transcription in that language still needs an approved speech-to-text room.",
+      requiredRoom: "Local profile preference — no provider call",
+      consequence: "review",
+      alternatePhrasing: ["Speak in Kinyarwanda", "Parle en français", "Ongea Kiswahili"],
+    },
+  },
+  {
+    pattern: /\b(text|message|send (?:a )?(?:whatsapp )?message|whatsapp someone)\b/i,
+    assessment: {
+      kind: "message-draft",
+      label: "Message draft only",
+      summary: "Arthur recognised a messaging request. It may collect a recipient and exact draft for your review, but it never selects a contact, opens a conversation, or sends a message automatically.",
+      requiredRoom: "Windows & local desktop",
+      vaultCategory: "Windows & local desktop",
+      consequence: "review",
+      alternatePhrasing: ["Text someone on WhatsApp", "Prepare a message", "Draft a WhatsApp note"],
+    },
+  },
+  {
+    pattern: /\b(open|launch|start)\s+(?:the )?(camera|whatsapp)\b/i,
+    assessment: {
+      kind: "app-launch",
+      label: "Reviewed application launch",
+      summary: "Arthur recognised a fixed Windows app route. The desktop prototype shows the exact URI and asks before it launches the installed Camera or WhatsApp application; it never runs generated shell text.",
+      requiredRoom: "Windows & local desktop",
+      vaultCategory: "Windows & local desktop",
+      consequence: "review",
+      alternatePhrasing: ["Open camera", "Launch WhatsApp", "Start the Camera app"],
+    },
+  },
+  {
+    pattern: /\b(open|show|start)\s+(?:the )?(voice|audio|sound)\s+(?:signal|visuali[sz]er|orb)\b/i,
+    assessment: {
+      kind: "voice-visualizer",
+      label: "Local voice signal",
+      summary: "Arthur can open its local voice-signal workspace. It uses a transient amplitude indicator only while listening or a command session is active; it does not save a recording.",
+      requiredRoom: "Local visual feedback — no API resource required",
+      consequence: "read-only",
+      alternatePhrasing: ["Show the voice orb", "Open the sound visualizer", "Start the audio signal"],
+    },
+  },
+  {
+    pattern: /\b(clone|copy|replicate)\s+(?:my )?voice\b/i,
+    assessment: {
+      kind: "voice-cloning",
+      label: "Voice-cloning request",
+      summary: "Arthur recognised a request to clone your own voice. It requires a selected provider, a separate informed-consent review, an explicit sample and retention policy, and a final provider-action confirmation. This preview neither records nor uploads audio.",
+      requiredRoom: "Voice synthesis & cloning — provider and consent required",
+      vaultCategory: "Voice & speech",
+      consequence: "proposal",
+      alternatePhrasing: ["Clone my voice", "Make a copy of my voice", "Use my voice for Arthur"],
+    },
+  },
   {
     pattern: /\b(quieter|lower (the )?volume|turn (the )?(sound|volume) down|reduce (the )?sound|make it less loud)\b/i,
     assessment: {
