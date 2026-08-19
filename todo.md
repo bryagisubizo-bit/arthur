@@ -162,3 +162,11 @@
 - [x] Test the onboarding and update controls and update the Windows guide.
 - [x] Rebuild the credential-free Windows source bundle after the tutorial and manual-update changes; verify its contents and scan it for accidental secrets.
 - [x] Save a checkpoint and deliver the tutorial and GitHub release-update source bundle.
+
+## JARVIS-Inspired Interaction & Voice Reliability
+
+- [x] Review the supplied JARVIS demonstration and translate only practical, non-fictional interaction and visual ideas into Arthur’s safe desktop scope.
+- [x] Diagnose the current voice-output, microphone, and openWakeWord integration paths and identify missing runtime dependencies, permissions, or configuration states.
+- [x] Add a consent-first voice diagnostic and guided wake-word configuration surface with explicit test states and no background listening by default.
+- [x] Test the revised desktop voice controls, rebuild the credential-free Windows source bundle, and update the Windows troubleshooting guide.
+- [ ] Save a checkpoint and deliver the revised voice and interaction source bundle.
