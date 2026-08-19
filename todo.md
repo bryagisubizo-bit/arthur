@@ -229,3 +229,10 @@
 - [x] Add an optional, local accessibility audio cue for camera activation and verification outcomes, with a visible mute control and no spoken biometric information.
 - [x] Add a local cooldown and temporary lockout after repeated failed face-access attempts, with a visible timer and recovery-secret path; retain no raw video or failed frames.
 - [x] Add matching browser-preview states, desktop regression coverage, Windows guidance, a rebuilt credential-free source bundle, checkpoint, and delivery.
+
+## Editable Greetings & Quiet Hours
+
+- [x] Add a local, user-editable greeting script with safe default wording, character limits, restore-default control, and preferred-title/name substitution.
+- [x] Add opt-in time-of-day greeting preferences that select a suitable opening or deliberate-wake greeting only while Arthur is already running; do not create a background scheduler or initiate speech on their own.
+- [x] Add an explicit local Do Not Disturb start/end schedule that suppresses non-essential greetings, with a visible active state and a user-controlled override.
+- [x] Add matching browser-preview states, desktop regression coverage, Windows guidance, a rebuilt credential-free source bundle, checkpoint, and delivery.

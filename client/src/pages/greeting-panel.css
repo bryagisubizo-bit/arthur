@@ -29,6 +29,41 @@
   line-height: 1.45;
 }
 
+.greeting-settings {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(85, 217, 255, 0.16);
+}
+
+.greeting-settings label {
+  display: grid;
+  gap: 0.32rem;
+  color: var(--muted);
+  font-size: 0.79rem;
+}
+
+.greeting-settings select,
+.greeting-settings textarea,
+.greeting-settings input[type="time"] {
+  width: 100%;
+  border: 1px solid rgba(85, 217, 255, 0.24);
+  background: rgba(4, 13, 29, 0.72);
+  color: var(--text);
+  font: inherit;
+}
+
+.greeting-settings select,
+.greeting-settings input[type="time"] { min-height: 2.35rem; padding: 0.4rem 0.55rem; }
+.greeting-settings textarea { min-height: 4.5rem; padding: 0.55rem; resize: vertical; }
+.greeting-toggle { grid-template-columns: auto 1fr; align-items: start; color: var(--text) !important; line-height: 1.35; }
+.greeting-toggle input { margin-top: 0.22rem; accent-color: var(--cyan); }
+.greeting-inline-actions, .quiet-hours-inputs { display: flex; align-items: center; gap: 0.7rem; }
+.greeting-inline-actions span { color: var(--muted); font-size: 0.74rem; }
+.quiet-hours-inputs > label { flex: 1; }
+.quiet-hours-state { margin: 0 !important; color: var(--muted) !important; font-size: 0.78rem; }
+
 .greeting-panel-actions {
   display: flex;
   flex-wrap: wrap;
@@ -76,6 +111,9 @@
     justify-content: flex-start;
     text-align: left;
   }
+
+  .greeting-inline-actions,
+  .quiet-hours-inputs { align-items: stretch; flex-direction: column; }
 }
 
 @media (max-width: 760px) {
