@@ -189,4 +189,4 @@
 - [x] Add a consent-gated local gesture control surface that never opens the camera, stores video, or controls the PC until the user explicitly enables it.
 - [x] Add a medically cautious symptom-support flow that is not a diagnosis, highlights urgent warning signs, and directs users to appropriate professional care.
 - [x] Add browser preview states, desktop-safe UI states, tests, documentation, and an updated credential-free Windows source bundle.
-- [ ] Save a checkpoint and deliver the touch, gesture, and health-support expansion.
+- [x] Save a checkpoint and deliver the touch, gesture, and health-support expansion.
