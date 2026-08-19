@@ -290,3 +290,9 @@
 - [x] Align the Windows shell and key workspaces with Arthur’s Orbital Command Atelier browser preview, including a hawk application icon.
 - [x] Expand API Vault provider cards with trusted provider website fields and explicit configuration status without embedding keys or claiming live connections.
 - [x] Add regression coverage, documentation, a credential-free Windows source bundle, checkpoint, and delivery.
+
+## API Vault Connection-State Clarity
+
+- [x] Replace ambiguous provider messages with distinct saved-locally, SDK-ready, connection-test-passed, and unconnected states.
+- [x] Require an explicit user-approved live test before Arthur describes a provider as reachable or connected.
+- [x] Add regression coverage, update the Windows source handoff, checkpoint, and delivery.
