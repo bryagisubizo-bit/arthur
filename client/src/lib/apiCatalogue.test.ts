@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apiCatalogue, catalogueCounts } from "./apiCatalogue";
+import { apiCatalogue, catalogueCounts, providerPlaceholderKey } from "./apiCatalogue";
 
 describe("Arthur API placeholder catalogue", () => {
   it("keeps every capability category routable to an explicit ownership and authentication boundary", () => {
@@ -18,5 +18,18 @@ describe("Arthur API placeholder catalogue", () => {
       expect(apiCatalogue.find((category) => category.id === id)?.reviewRequired).toBe(true);
     }
     expect(catalogueCounts.providers).toBeGreaterThan(120);
+  });
+
+  it("keeps provider placeholders unique within each room and assigns category-scoped React keys", () => {
+    const keys = new Set<string>();
+
+    for (const category of apiCatalogue) {
+      expect(new Set(category.providers).size).toBe(category.providers.length);
+      for (const provider of category.providers) {
+        keys.add(providerPlaceholderKey(category.id, provider));
+      }
+    }
+
+    expect(keys.size).toBe(catalogueCounts.providers);
   });
 });

@@ -73,9 +73,15 @@
 - [x] Add a searchable, filterable provider placeholder catalogue that preserves function, providers, authentication pattern, owner, and availability status.
 - [x] Add safe resource-routing guidance so unsupported or unconfigured commands identify the required category and never fabricate a provider connection.
 - [x] Verify the expanded catalogue on desktop and mobile.
-- [ ] Save the function-classified API placeholder catalogue delivery checkpoint and deliver the update.
+- [x] Save the function-classified API placeholder catalogue delivery checkpoint and deliver the update.
 
 ## Catalogue Completion Corrections
 
 - [x] Add an explicit visible review-required and excluded-routing section with rationale for sensitive domains.
 - [x] Wire missing-resource command outcomes to a selected API category and a direct catalogue focus link.
+
+## Duplicate Provider-Key Repair
+
+- [x] Replace duplicate provider-name React keys with stable category-scoped placeholders.
+- [x] Add regression coverage for duplicate provider placeholders and verify the browser console is clear.
+- [ ] Save a checkpoint and deliver the duplicate-key repair.
