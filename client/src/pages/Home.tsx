@@ -65,6 +65,7 @@ const heroImage = "/manus-storage/arthur-hero-atmosphere_eca500cb.png";
 const analyticsImage = "/manus-storage/arthur-analytics-orbit_3b540420.png";
 const voiceImage = "/manus-storage/arthur-voice-signal_cd52a5c8.png";
 const markImage = "/manus-storage/arthur-mark_c216fbf0.png";
+const hawkMarkImage = "/manus-storage/arthur-hawk-icon_2f5afb70.png";
 
 const providerCards: ProviderCard[] = [
   ["Main intelligence", "OpenAI", "Conversation, planning & tool selection", "openai-key"],
@@ -301,7 +302,7 @@ export default function Home() {
   return (
     <main className={`arthur-app colour-${colourMode} type-${appearance.typeScale} density-${appearance.density} motion-${appearance.motion}`}>
       <aside className="instrument-rail">
-        <div className="brand-lockup"><img src={markImage} alt="Arthur orbital mark" /><div><strong>ARTHUR</strong><span>desktop intelligence</span></div></div>
+        <div className="brand-lockup"><img src={hawkMarkImage} alt="Arthur hawk mark" /><div><strong>ARTHUR</strong><span>orbital command atelier</span></div><img className="brand-orbital-mark" src={markImage} alt="" aria-hidden="true" /></div>
         <nav aria-label="Arthur sections">
           {nav.map(([id, Icon, label]) => <button key={id} className={`nav-item ${section === id ? "active" : ""}`} onClick={() => setSection(id)}><Icon size={19} /><span>{label}</span></button>)}
         </nav>

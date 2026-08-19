@@ -283,3 +283,10 @@
 - [x] Add an explicit installer-source guard that stops compilation with a clear recovery message when `dist\\Arthur\\Arthur.exe` is missing.
 - [x] Document the required order: run the Windows PyInstaller build from the project root before compiling the Inno Setup script.
 - [x] Validate the guarded handoff and deliver the exact recovery steps for the reported build failure.
+
+## Microphone, Desktop Parity & Provider Vault
+
+- [x] Audit and repair the consented Windows microphone permission, input-device, and openWakeWord readiness flow without enabling background listening automatically.
+- [x] Align the Windows shell and key workspaces with Arthur’s Orbital Command Atelier browser preview, including a hawk application icon.
+- [x] Expand API Vault provider cards with trusted provider website fields and explicit configuration status without embedding keys or claiming live connections.
+- [x] Add regression coverage, documentation, a credential-free Windows source bundle, checkpoint, and delivery.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apiCatalogue, catalogueCounts, providerPlaceholderKey } from "./apiCatalogue";
+import { apiCatalogue, catalogueCounts, officialProviderWebsite, providerPlaceholderKey } from "./apiCatalogue";
 
 describe("Arthur API placeholder catalogue", () => {
   it("keeps every capability category routable to an explicit ownership and authentication boundary", () => {
@@ -45,5 +45,12 @@ describe("Arthur API placeholder catalogue", () => {
     }
 
     expect(keys.size).toBe(catalogueCounts.providers);
+  });
+
+  it("offers selected official setup websites without implying a live provider connection", () => {
+    expect(officialProviderWebsite("OpenAI")).toBe("https://platform.openai.com/");
+    expect(officialProviderWebsite("Home Assistant")).toBe("https://www.home-assistant.io/");
+    expect(officialProviderWebsite("SecurityTrails")).toBe("https://securitytrails.com/");
+    expect(officialProviderWebsite("Arthur Windows adapter")).toBeUndefined();
   });
 });
