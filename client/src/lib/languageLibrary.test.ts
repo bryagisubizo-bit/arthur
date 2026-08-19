@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPrivateColloquialDraft, filterLanguages, findLanguage, languageFromPreferenceRequest, prepareMultilingualSearch } from "./languageLibrary";
+import { createPrivateColloquialDraft, filterLanguages, findLanguage, getSourceConfirmedExpressions, languageFromPreferenceRequest, prepareMultilingualSearch, prepareSourceConfirmedExpression } from "./languageLibrary";
 
 describe("Arthur language library", () => {
   it("finds language names, codes, and native labels locally", () => {
@@ -27,5 +27,27 @@ describe("Arthur language library", () => {
     expect(draft.language).toBe("Diné Bizaad (Navajo)");
     expect(draft.reviewStatus).toBe("Private draft — not community reviewed");
     expect(() => createPrivateColloquialDraft("English", "", "regional context", "source")).toThrow("expression");
+  });
+
+  it("keeps cited endangered-language expressions scoped to their region and source", () => {
+    const records = getSourceConfirmedExpressions("Haida");
+    expect(records).toHaveLength(1);
+    expect(records[0].regionalContext).toContain("Northern dialect");
+    expect(records[0].evidenceUrl).toMatch(/^https:/);
+    expect(records[0].reviewStatus).toBe("Source-confirmed — not community-reviewed");
+  });
+
+  it("requires attested HTTPS evidence without upgrading a record to community review", () => {
+    const preview = prepareSourceConfirmedExpression({
+      language: "Manx", expression: "Example", meaning: "Example meaning", regionalContext: "Isle of Man",
+      useContext: "Context documented by the source", sensitivityNote: "Use only in the cited context",
+      evidenceKind: "community-language-program", evidenceTitle: "Named community resource", evidenceUrl: "https://example.org/source", evidenceReviewed: true,
+    });
+    expect(preview.reviewStatus).toBe("Source-confirmed — not community-reviewed");
+    expect(preview.verificationNote).toContain("not community review");
+    expect(() => prepareSourceConfirmedExpression({
+      language: "Manx", expression: "Example", meaning: "Example meaning", regionalContext: "Isle of Man",
+      useContext: "Context", sensitivityNote: "Note", evidenceKind: "community-language-program", evidenceTitle: "Named source", evidenceUrl: "http://example.org", evidenceReviewed: true,
+    })).toThrow("HTTPS");
   });
 });

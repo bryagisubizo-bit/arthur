@@ -257,3 +257,10 @@
 - [x] Add an import-ready colloquial-entry workflow that requires a language, regional context, expression, meaning, source or community attribution, sensitivity note, and review state; keep every language empty until a verified entry is supplied.
 - [x] Add desktop and browser-preview coverage filters, readiness summaries, and a reviewed import-preview path that never publishes entries, activates translation, or sends language content to a provider automatically.
 - [x] Add regression coverage, consent and Windows guidance, a rebuilt credential-free source bundle, checkpoint, and delivery.
+
+## Endangered-Language Expression Verification
+
+- [x] Add source-backed endangered-language records with community, region, usage context, evidence URL, and verification state.
+- [x] Require a recognised community, government, educational, or archival source before an expression can receive Arthur’s source-confirmed status.
+- [x] Extend browser and Windows Language Library controls to present evidence, regional context, and limitations without treating source confirmation as community authority.
+- [x] Add regression coverage, source documentation, a rebuilt credential-free Windows bundle, checkpoint, and delivery.

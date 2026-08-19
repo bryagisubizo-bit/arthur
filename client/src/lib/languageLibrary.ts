@@ -26,6 +26,27 @@ export type ColloquialEntryReview = Omit<PrivateColloquialDraft, "reviewStatus">
   reviewStatus: "Review preview only — not published or verified";
 };
 
+export type ExpressionEvidenceKind = "community-language-program" | "government-cultural-resource" | "educational-or-archival-resource";
+
+export type SourceConfirmedExpression = {
+  language: string;
+  expression: string;
+  meaning: string;
+  regionalContext: string;
+  useContext: string;
+  sensitivityNote: string;
+  evidenceKind: ExpressionEvidenceKind;
+  evidenceTitle: string;
+  evidenceUrl: string;
+  verificationNote: string;
+  reviewStatus: "Source-confirmed — not community-reviewed";
+};
+
+export type SourceConfirmationInput = Omit<SourceConfirmedExpression, "language" | "reviewStatus" | "verificationNote"> & {
+  language: string;
+  evidenceReviewed: boolean;
+};
+
 export type ImportedLanguageReference = Pick<LanguageEntry, "name" | "code" | "nativeLabel">;
 
 const profileReady = new Set(["English", "Kinyarwanda", "French", "Kiswahili"]);
@@ -45,6 +66,7 @@ Bambara|bm|Bamanankan|Latin
 Basque|eu|Euskara|Latin
 Belarusian|be|Беларуская|Cyrillic
 Bengali|bn|বাংলা|Bengali
+Blackfoot (Siksika / Pikanii)|bla|Blackfoot|Latin
 Bosnian|bs|Bosanski|Latin
 Bulgarian|bg|Български|Cyrillic
 Burmese|my|မြန်မာ|Myanmar
@@ -65,6 +87,7 @@ Georgian|ka|ქართული|Georgian
 German|de|Deutsch|Latin
 Greek|el|Ελληνικά|Greek
 Gujarati|gu|ગુજરાતી|Gujarati
+Haida (Northern dialect)|hai|Haida|Latin
 Hausa|ha|Hausa|Latin
 Hawaiian|haw|ʻŌlelo Hawaiʻi|Latin
 Hebrew|he|עברית|Hebrew
@@ -97,6 +120,7 @@ Mongolian|mn|Монгол|Cyrillic
 Nepali|ne|नेपाली|Devanagari
 Norwegian|no|Norsk|Latin
 Odia|or|ଓଡ଼ିଆ|Odia
+Oneida|one|Oneida|Latin
 Oromo|om|Afaan Oromoo|Latin
 Pashto|ps|پښتو|Arabic
 Persian|fa|فارسی|Arabic
@@ -143,8 +167,11 @@ const languageMetadata: Record<string, Pick<LanguageEntry, "aliases" | "communit
   },
   Ainu: { aliases: [], communityReview: "Authoritative community source required", vitalityContext: "Community revitalisation context — authoritative community source required", colloquialStatus: "No colloquial expressions are bundled" },
   Hawaiian: { aliases: ["Olelo Hawaii"], communityReview: "Authoritative community source required", vitalityContext: "Community revitalisation context — authoritative community source required", colloquialStatus: "No colloquial expressions are bundled" },
-  Inuktitut: { aliases: [], communityReview: "Authoritative community source required", vitalityContext: "Community vitality context varies by region — authoritative community source required", colloquialStatus: "No colloquial expressions are bundled" },
-  Manx: { aliases: [], communityReview: "Authoritative community source required", vitalityContext: "Community revitalisation context — authoritative community source required", colloquialStatus: "No colloquial expressions are bundled" },
+  "Blackfoot (Siksika / Pikanii)": { aliases: ["Blackfoot", "Siksika", "Pikanii"], communityReview: "Regional source confirmation present — community review still required", vitalityContext: "Regional Indigenous-language source set — do not infer vitality or permission from this record", colloquialStatus: "A source-confirmed regional greeting example is available; no slang is bundled" },
+  "Haida (Northern dialect)": { aliases: ["Haida", "Northern Haida"], communityReview: "Dialect-labelled source confirmation present — community review still required", vitalityContext: "Regional Indigenous-language source set — do not infer vitality or permission from this record", colloquialStatus: "A source-confirmed regional greeting example is available; no slang is bundled" },
+  Inuktitut: { aliases: [], communityReview: "Dialect-labelled source confirmation present — community review still required", vitalityContext: "Community vitality context varies by region — authoritative community source required", colloquialStatus: "A source-confirmed North Baffin example is available; no slang is bundled" },
+  Manx: { aliases: [], communityReview: "Source confirmation present — community review still required", vitalityContext: "Community revitalisation context — authoritative community source required", colloquialStatus: "A source-confirmed learning expression is available; no slang is bundled" },
+  Oneida: { aliases: [], communityReview: "Regional source confirmation present — community review still required", vitalityContext: "Regional Indigenous-language source set — do not infer vitality or permission from this record", colloquialStatus: "A source-confirmed regional greeting example is available; no slang is bundled" },
   Yuchi: { aliases: [], communityReview: "Authoritative community source required", vitalityContext: "Community revitalisation context — authoritative community source required", colloquialStatus: "No colloquial expressions are bundled" },
 };
 
@@ -161,6 +188,76 @@ export const languageLibrary: LanguageEntry[] = rows.split("\n").map((row) => {
 });
 
 const normalise = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().trim();
+
+export const sourceConfirmedExpressions: SourceConfirmedExpression[] = [
+  {
+    language: "Manx",
+    expression: "Aigh vie",
+    meaning: "Good luck",
+    regionalContext: "Isle of Man; Learn Manx learner resource",
+    useContext: "Beginner-learning encouragement expression",
+    sensitivityNote: "Use the linked learning source for context. This does not establish universal or colloquial usage.",
+    evidenceKind: "community-language-program",
+    evidenceTitle: "Learn Manx — 1000 Words",
+    evidenceUrl: "https://www.learnmanx.com/learning/1000words/",
+    verificationNote: "Source checked against a named Isle of Man learning resource; no community-wide endorsement is implied.",
+    reviewStatus: "Source-confirmed — not community-reviewed",
+  },
+  {
+    language: "Blackfoot (Siksika / Pikanii)",
+    expression: "Oki, tsanitapi?",
+    meaning: "Hello! How are you?",
+    regionalContext: "Canada; language label shown as Blackfoot (Siksika / Pikanii) by the source",
+    useContext: "Greeting listed by the source",
+    sensitivityNote: "Keep the source's language label attached; do not generalise this wording across all Blackfoot communities.",
+    evidenceKind: "government-cultural-resource",
+    evidenceTitle: "Government of Canada — How to say hello in Indigenous languages",
+    evidenceUrl: "https://www.canada.ca/en/canadian-heritage/campaigns/canada-day/say-hello.html",
+    verificationNote: "Source checked against a named government cultural resource; no community-wide endorsement is implied.",
+    reviewStatus: "Source-confirmed — not community-reviewed",
+  },
+  {
+    language: "Haida (Northern dialect)",
+    expression: "Jáa, gasánuu dáng G̱íidang?",
+    meaning: "Hello! How are you?",
+    regionalContext: "Canada; Northern dialect label retained exactly from the source",
+    useContext: "Greeting listed by the source",
+    sensitivityNote: "Dialect label is required. Do not substitute this expression for other Haida dialects or claim a universal greeting.",
+    evidenceKind: "government-cultural-resource",
+    evidenceTitle: "Government of Canada — How to say hello in Indigenous languages",
+    evidenceUrl: "https://www.canada.ca/en/canadian-heritage/campaigns/canada-day/say-hello.html",
+    verificationNote: "Source checked against a named government cultural resource; no community-wide endorsement is implied.",
+    reviewStatus: "Source-confirmed — not community-reviewed",
+  },
+  {
+    language: "Inuktitut",
+    expression: "Aingai! Qanuippit",
+    meaning: "Hello! How are you?",
+    regionalContext: "Canada; North Baffin, Roman Orthography label retained from the source",
+    useContext: "Greeting listed by the source",
+    sensitivityNote: "The North Baffin and writing-system label is integral; do not treat this as a replacement for other Inuktitut regional varieties.",
+    evidenceKind: "government-cultural-resource",
+    evidenceTitle: "Government of Canada — How to say hello in Indigenous languages",
+    evidenceUrl: "https://www.canada.ca/en/canadian-heritage/campaigns/canada-day/say-hello.html",
+    verificationNote: "Source checked against a named government cultural resource; no community-wide endorsement is implied.",
+    reviewStatus: "Source-confirmed — not community-reviewed",
+  },
+  {
+    language: "Oneida",
+    expression: "shekoli ohniyotuháti?",
+    meaning: "Hello! How are you?",
+    regionalContext: "Canada; Oneida language label retained from the source",
+    useContext: "Greeting listed by the source",
+    sensitivityNote: "Use only with the linked source and do not infer that a government listing replaces review by Oneida language authorities.",
+    evidenceKind: "government-cultural-resource",
+    evidenceTitle: "Government of Canada — How to say hello in Indigenous languages",
+    evidenceUrl: "https://www.canada.ca/en/canadian-heritage/campaigns/canada-day/say-hello.html",
+    verificationNote: "Source checked against a named government cultural resource; no community-wide endorsement is implied.",
+    reviewStatus: "Source-confirmed — not community-reviewed",
+  },
+];
+
+const evidenceKinds = new Set<ExpressionEvidenceKind>(["community-language-program", "government-cultural-resource", "educational-or-archival-resource"]);
 
 export function mergeImportedLanguageReferences(references: ImportedLanguageReference[]): LanguageEntry[] {
   const knownCodes = new Set(languageLibrary.map((entry) => normalise(entry.code)));
@@ -260,4 +357,46 @@ export function prepareColloquialEntryReview(
   const cleanSensitivity = sensitivityNote.trim().slice(0, 180);
   if (!cleanMeaning || !cleanSensitivity) throw new Error("Add a plain-language meaning and sensitivity/context note for review.");
   return { ...draft, meaning: cleanMeaning, sensitivityNote: cleanSensitivity, reviewStatus: "Review preview only — not published or verified" };
+}
+
+export function getSourceConfirmedExpressions(languageName: string, catalogue: LanguageEntry[] = languageLibrary): SourceConfirmedExpression[] {
+  const language = findLanguage(languageName, catalogue);
+  return language ? sourceConfirmedExpressions.filter((record) => record.language === language.name) : [];
+}
+
+export function prepareSourceConfirmedExpression(input: SourceConfirmationInput, catalogue: LanguageEntry[] = languageLibrary): SourceConfirmedExpression {
+  const review = prepareColloquialEntryReview(
+    input.language,
+    input.expression,
+    input.meaning,
+    input.regionalContext,
+    input.evidenceTitle,
+    input.sensitivityNote,
+    catalogue,
+  );
+  const useContext = input.useContext.trim().slice(0, 180);
+  const evidenceTitle = input.evidenceTitle.trim().slice(0, 180);
+  const evidenceUrl = input.evidenceUrl.trim().slice(0, 500);
+  if (!useContext || !evidenceTitle) throw new Error("Add the expression's use context and a named evidence source.");
+  if (!evidenceKinds.has(input.evidenceKind)) throw new Error("Choose a recognised community, government, educational, or archival source type.");
+  try {
+    const url = new URL(evidenceUrl);
+    if (url.protocol !== "https:") throw new Error("Use an HTTPS evidence URL.");
+  } catch {
+    throw new Error("Add a valid HTTPS evidence URL before source confirmation.");
+  }
+  if (!input.evidenceReviewed) throw new Error("Confirm that a reviewer checked the source, region or dialect, and use context before source confirmation.");
+  return {
+    language: review.language,
+    expression: review.expression,
+    meaning: review.meaning,
+    regionalContext: review.regionalContext,
+    useContext,
+    sensitivityNote: review.sensitivityNote,
+    evidenceKind: input.evidenceKind,
+    evidenceTitle,
+    evidenceUrl,
+    verificationNote: "Reviewer-attested source confirmation only; this is not community review, publication permission, or automatic-use approval.",
+    reviewStatus: "Source-confirmed — not community-reviewed",
+  };
 }
