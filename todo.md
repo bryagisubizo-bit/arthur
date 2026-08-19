@@ -250,3 +250,10 @@
 - [x] Add a clearly bounded language-vitality section for selected under-resourced, endangered, and revitalization-focused languages, with uncertain status marked as needing an authoritative community source.
 - [x] Add a community-reviewed colloquial-expression framework with language and regional context, source/provenance, review status, and an empty-by-default state; do not fabricate “slang” entries or treat it as automatic translation.
 - [x] Add matching desktop and browser-preview controls, regression coverage, consent and Windows guidance, a rebuilt credential-free source bundle, checkpoint, and delivery.
+
+## All-Language Colloquial Catalogue
+
+- [x] Expand the language registry to an all-language catalogue with searchable ISO language-code coverage and a clear distinction between catalogue availability, local packs, and verified colloquial content.
+- [x] Add an import-ready colloquial-entry workflow that requires a language, regional context, expression, meaning, source or community attribution, sensitivity note, and review state; keep every language empty until a verified entry is supplied.
+- [x] Add desktop and browser-preview coverage filters, readiness summaries, and a reviewed import-preview path that never publishes entries, activates translation, or sends language content to a provider automatically.
+- [x] Add regression coverage, consent and Windows guidance, a rebuilt credential-free source bundle, checkpoint, and delivery.

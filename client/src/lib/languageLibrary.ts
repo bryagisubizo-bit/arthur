@@ -20,6 +20,14 @@ export type PrivateColloquialDraft = {
   reviewStatus: "Private draft — not community reviewed";
 };
 
+export type ColloquialEntryReview = Omit<PrivateColloquialDraft, "reviewStatus"> & {
+  meaning: string;
+  sensitivityNote: string;
+  reviewStatus: "Review preview only — not published or verified";
+};
+
+export type ImportedLanguageReference = Pick<LanguageEntry, "name" | "code" | "nativeLabel">;
+
 const profileReady = new Set(["English", "Kinyarwanda", "French", "Kiswahili"]);
 
 const rows = `English|en|English|Latin
@@ -154,14 +162,57 @@ export const languageLibrary: LanguageEntry[] = rows.split("\n").map((row) => {
 
 const normalise = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().trim();
 
-export function filterLanguages(query = ""): LanguageEntry[] {
-  const needle = normalise(query);
-  return !needle ? languageLibrary : languageLibrary.filter((entry) => normalise(`${entry.name} ${entry.code} ${entry.nativeLabel} ${entry.script} ${entry.aliases.join(" ")}`).includes(needle));
+export function mergeImportedLanguageReferences(references: ImportedLanguageReference[]): LanguageEntry[] {
+  const knownCodes = new Set(languageLibrary.map((entry) => normalise(entry.code)));
+  const imported = references.flatMap((reference) => {
+    const code = reference.code.trim().toLowerCase();
+    const name = reference.name.trim();
+    const nativeLabel = reference.nativeLabel.trim() || name;
+    if (!/^[a-z]{3}$/.test(code) || !name || knownCodes.has(normalise(code))) return [];
+    knownCodes.add(normalise(code));
+    return [{
+      name,
+      code,
+      nativeLabel,
+      script: "Unspecified in imported identifier table",
+      readiness: "pack-or-provider" as const,
+      aliases: [],
+      communityReview: "No community review is bundled — identifier table only",
+      vitalityContext: "No vitality label is bundled — consult an authoritative community source",
+      colloquialStatus: "No colloquial expressions are bundled",
+    }];
+  });
+  return [...languageLibrary, ...imported];
 }
 
-export function findLanguage(value: string): LanguageEntry | undefined {
+export function parseIso6393Table(tableText: string, maxEntries = 8000): ImportedLanguageReference[] {
+  const lines = tableText.replace(/^\uFEFF/, "").split(/\r?\n/).filter(Boolean);
+  const header = lines.shift()?.split("\t") ?? [];
+  const idIndex = header.indexOf("Id");
+  const nameIndex = header.indexOf("Ref_Name");
+  if (idIndex < 0 || nameIndex < 0) throw new Error("Choose a tab-separated ISO 639-3 table containing Id and Ref_Name columns.");
+  const knownCodes = new Set(languageLibrary.map((entry) => normalise(entry.code)));
+  const results: ImportedLanguageReference[] = [];
+  for (const line of lines) {
+    const cells = line.split("\t");
+    const code = (cells[idIndex] ?? "").trim().toLowerCase();
+    const name = (cells[nameIndex] ?? "").trim();
+    if (!/^[a-z]{3}$/.test(code) || !name || knownCodes.has(normalise(code))) continue;
+    knownCodes.add(normalise(code));
+    results.push({ name, code, nativeLabel: name });
+    if (results.length >= maxEntries) break;
+  }
+  return results;
+}
+
+export function filterLanguages(query = "", catalogue: LanguageEntry[] = languageLibrary): LanguageEntry[] {
+  const needle = normalise(query);
+  return !needle ? catalogue : catalogue.filter((entry) => normalise(`${entry.name} ${entry.code} ${entry.nativeLabel} ${entry.script} ${entry.aliases.join(" ")}`).includes(needle));
+}
+
+export function findLanguage(value: string, catalogue: LanguageEntry[] = languageLibrary): LanguageEntry | undefined {
   const needle = normalise(value);
-  return languageLibrary.find((entry) => [entry.name, entry.code, entry.nativeLabel, ...entry.aliases].some((candidate) => normalise(candidate) === needle));
+  return catalogue.find((entry) => [entry.name, entry.code, entry.nativeLabel, ...entry.aliases].some((candidate) => normalise(candidate) === needle));
 }
 
 export function languageFromPreferenceRequest(request: string): LanguageEntry | undefined {
@@ -170,8 +221,8 @@ export function languageFromPreferenceRequest(request: string): LanguageEntry | 
   return languageLibrary.find((entry) => [entry.name, entry.nativeLabel, ...entry.aliases].some((candidate) => normalisedRequest.includes(normalise(candidate))));
 }
 
-export function prepareMultilingualSearch(query: string, selectedLanguage: string) {
-  const language = findLanguage(selectedLanguage);
+export function prepareMultilingualSearch(query: string, selectedLanguage: string, catalogue: LanguageEntry[] = languageLibrary) {
+  const language = findLanguage(selectedLanguage, catalogue);
   const cleanQuery = query.trim().slice(0, 500);
   if (!cleanQuery) return { ready: false, query: "", reason: "Enter a question before preparing research." };
   if (!language) return { ready: false, query: cleanQuery, reason: "Select a language from Arthur’s local library first." };
@@ -185,12 +236,28 @@ export function prepareMultilingualSearch(query: string, selectedLanguage: strin
   };
 }
 
-export function createPrivateColloquialDraft(languageName: string, expression: string, regionalContext: string, sourceNote: string): PrivateColloquialDraft {
-  const language = findLanguage(languageName);
+export function createPrivateColloquialDraft(languageName: string, expression: string, regionalContext: string, sourceNote: string, catalogue: LanguageEntry[] = languageLibrary): PrivateColloquialDraft {
+  const language = findLanguage(languageName, catalogue);
   const cleanExpression = expression.trim().slice(0, 120);
   const cleanContext = regionalContext.trim().slice(0, 160);
   const cleanSource = sourceNote.trim().slice(0, 240);
   if (!language) throw new Error("Choose a language from the local library first.");
   if (!cleanExpression || !cleanContext || !cleanSource) throw new Error("Add the expression, regional context, and source or community-review note.");
   return { language: language.name, expression: cleanExpression, regionalContext: cleanContext, sourceNote: cleanSource, reviewStatus: "Private draft — not community reviewed" };
+}
+
+export function prepareColloquialEntryReview(
+  languageName: string,
+  expression: string,
+  meaning: string,
+  regionalContext: string,
+  sourceNote: string,
+  sensitivityNote: string,
+  catalogue: LanguageEntry[] = languageLibrary,
+): ColloquialEntryReview {
+  const draft = createPrivateColloquialDraft(languageName, expression, regionalContext, sourceNote, catalogue);
+  const cleanMeaning = meaning.trim().slice(0, 240);
+  const cleanSensitivity = sensitivityNote.trim().slice(0, 180);
+  if (!cleanMeaning || !cleanSensitivity) throw new Error("Add a plain-language meaning and sensitivity/context note for review.");
+  return { ...draft, meaning: cleanMeaning, sensitivityNote: cleanSensitivity, reviewStatus: "Review preview only — not published or verified" };
 }
