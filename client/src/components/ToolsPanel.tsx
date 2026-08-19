@@ -78,7 +78,7 @@ const initialHistory = [
 
 const smartHomeProviders = ["Home Assistant", "Philips Hue", "SmartThings", "Tuya", "MQTT adapter", "Other local hub"];
 
-export default function ToolsPanel() {
+export default function ToolsPanel({ focusSpatial = false }: { focusSpatial?: boolean }) {
   const [activeRoute, setActiveRoute] = useState("Conversation");
   const [privacyMode, setPrivacyMode] = useState(false);
   const [automations, setAutomations] = useState(initialAutomations);
@@ -102,6 +102,7 @@ export default function ToolsPanel() {
   const [symptomGuidance, setSymptomGuidance] = useState<SymptomGuidance | null>(null);
   const dragCard = useRef<string | null>(null);
   const touchOrigin = useRef<{ x: number; y: number } | null>(null);
+  const spatialWorkspaceRef = useRef<HTMLElement | null>(null);
   const active = routeModes.find((item) => item.name === activeRoute) ?? routeModes[0];
 
   useEffect(() => {
@@ -109,6 +110,14 @@ export default function ToolsPanel() {
     const timer = window.setInterval(() => setFaceCooldownSeconds((seconds) => Math.max(0, seconds - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [faceCooldownSeconds]);
+
+  useEffect(() => {
+    if (!focusSpatial) return;
+    const frame = window.requestAnimationFrame(() => {
+      spatialWorkspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusSpatial]);
 
   const previewFaceFailure = () => {
     if (faceCooldownSeconds) return;
@@ -174,6 +183,7 @@ export default function ToolsPanel() {
 
   return (
     <section className="tools-layout">
+      {!focusSpatial && <>
       <header className="tools-hero">
         <div>
           <span className="eyebrow">Tool-routing workspace / inspected intent</span>
@@ -239,8 +249,9 @@ export default function ToolsPanel() {
         <p className="tools-intro">Arthur will not collect every camera or microphone detail. A user can deliberately select a local photo or a short own-voice sample in the desktop app, set a retention period, and review a separate request before a configured developer-owned provider receives anything.</p>
         <div className="smart-home-actions"><button className="outline-button" onClick={() => toast("Camera-style proposal requires an explicit local file choice.", { description: "The preview never opens a camera or accesses images." })}>Review camera-style boundary <Camera size={15} /></button><button className="outline-button" onClick={() => toast("Own-voice proposal requires fresh consent and an imported local sample.", { description: "Arthur cannot clone another person’s voice and never uploads a sample from this preview." })}>Review own-voice boundary <Mic size={15} /></button></div>
       </section>
+      </>}
 
-      <section className="tools-panel spatial-workspace-review">
+      <section ref={spatialWorkspaceRef} className="tools-panel spatial-workspace-review">
         <div className="section-heading"><div><span className="eyebrow">Touch & spatial workspace / Arthur only</span><h3>Arrange the field with direct touch.</h3></div><Hand size={19} /></div>
         <p className="tools-intro">On a touch screen, swipe this card field left or right to choose an Arthur card, drag cards to change their order, and pinch or use the controls to adjust the in-app canvas scale. These inputs never control another Windows application or move the system pointer.</p>
         <div className={`spatial-room-access ${spatialUnlocked ? "unlocked" : "locked"}`}>
@@ -267,6 +278,7 @@ export default function ToolsPanel() {
         <div className="gesture-consent-callout"><Hand size={18} /><div><b>Camera-based air gestures are optional and off.</b><p>Enable only in the Windows prototype after manually installing the optional requirements, selecting a local camera, unlocking this room, and accepting the visible local-only camera indicator. The preview neither opens a camera nor reads video.</p></div><label className="review-choice"><input disabled={!spatialUnlocked} type="checkbox" checked={gestureConsent} onChange={(event) => setGestureConsent(event.target.checked)} /> I want to review local air-gesture consent.</label><button className="outline-button" disabled={!spatialUnlocked} onClick={() => toast(gestureConsent ? "Desktop consent proposal prepared." : "Confirm the separate consent acknowledgement first.", { description: gestureConsent ? "The installed prototype processes transient local hand landmarks only; it does not retain video or biometric templates." : "A camera never opens from this preview." })}>Prepare consent review</button></div>
       </section>
 
+      {!focusSpatial && <>
       <section className="tools-panel symptom-support-review">
         <div className="section-heading"><div><span className="eyebrow">Health support / guidance, not diagnosis</span><h3>Prepare clear information for appropriate care.</h3></div><HeartPulse size={19} /></div>
         <p className="tools-intro">Arthur cannot diagnose a disease or replace a clinician. It can provide cautious information and encourage urgent care when a description contains potential warning signs. Your text is not saved in this preview.</p>
@@ -285,6 +297,7 @@ export default function ToolsPanel() {
         <div className="section-heading"><div><span className="eyebrow">Command history / local audit shape</span><h3>What Arthur understood, prepared, and deferred.</h3></div><button className="text-button" onClick={() => { setHistory([]); toast("Preview history cleared.", { description: "The production app should keep audit entries local and user-controlled." }); }}>Clear preview history</button></div>
         {history.length ? <div className="history-list">{history.map(([time, request, result, state]) => <article className="history-row" key={`${time}-${request}`}><span>{time}</span><div><b>{request}</b><small>{result}</small></div><em>{state}</em></article>)}</div> : <div className="history-empty"><History size={20} /><span>There are no preview history entries. New actions should always be visible before they are carried out.</span></div>}
       </section>
+      </>}
     </section>
   );
 }

@@ -264,3 +264,10 @@
 - [x] Require a recognised community, government, educational, or archival source before an expression can receive Arthur’s source-confirmed status.
 - [x] Extend browser and Windows Language Library controls to present evidence, regional context, and limitations without treating source confirmation as community authority.
 - [x] Add regression coverage, source documentation, a rebuilt credential-free Windows bundle, checkpoint, and delivery.
+
+## Spatial Workspace & Local Voice Test
+
+- [x] Make the Spatial workspace entry point and touch actions—swipe, zoom, drag, reorder, and reversible discard—easy to find in both Arthur interfaces.
+- [x] Add clearer local voice-test guidance and a spoken-introduction diagnostic that remains opt-in and reports output availability honestly.
+- [x] Add a guarded listening-readiness check that can report microphone/input availability without starting background listening or retaining speech.
+- [x] Add regression coverage, update guidance, rebuild the credential-free Windows source bundle, checkpoint, and delivery.

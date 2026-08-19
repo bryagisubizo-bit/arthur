@@ -32,6 +32,7 @@ import {
   Fingerprint,
   FolderCog,
   Globe2,
+  Hand,
   KeyRound,
   Languages,
   LockKeyhole,
@@ -56,7 +57,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type Section = "command" | "tools" | "voice" | "persona" | "notes" | "autonomy" | "languages" | "api" | "permissions" | "updates";
+type Section = "command" | "tools" | "spatial" | "voice" | "persona" | "notes" | "autonomy" | "languages" | "api" | "permissions" | "updates";
 type ProviderCard = [string, string, string, string];
 type CommandPlanPreview = { intent: string; summary: string; command: string; risk: "low" | "medium" | "blocked"; confirmation: boolean; allowed: boolean; reason?: string; missingRoom?: string };
 
@@ -79,6 +80,7 @@ const providerCards: ProviderCard[] = [
 const nav = [
   ["command", Command, "Command desk"],
   ["tools", Settings2, "Tools & routing"],
+  ["spatial", Hand, "Spatial workspace"],
   ["voice", AudioLines, "Voice studio"],
   ["persona", Bot, "Conduct & memory"],
   ["notes", FolderCog, "Private notes"],
@@ -309,7 +311,7 @@ export default function Home() {
       <section className={`command-canvas ${section === "persona" ? "persona-active" : ""}`}>
         {section === "persona" && <PersonaPanel demeanor={demeanor} learning={learning} toggleDemeanor={(key) => setDemeanor((current) => ({ ...current, [key]: !current[key] }))} toggleLearning={(key) => setLearning((current) => ({ ...current, [key]: !current[key] }))} openPermissions={() => setSection("permissions")} />}
         {section === "api" && <button className="api-guide-fab" onClick={() => setApiGuideOpen(true)}><KeyRound size={15} /> Where do I get keys?</button>}
-        <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "tools" ? "Tools & routing" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "notes" ? "Private notes" : section === "autonomy" ? "Autonomy & change" : section === "languages" ? "Language library" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
+        <header className="topbar"><div><div className="eyebrow">Local workstation / windows 11</div><h1>{section === "command" ? "Command desk" : section === "tools" ? "Tools & routing" : section === "spatial" ? "Spatial workspace" : section === "voice" ? "Voice studio" : section === "persona" ? "Conduct & memory" : section === "notes" ? "Private notes" : section === "autonomy" ? "Autonomy & change" : section === "languages" ? "Language library" : section === "api" ? "Developer API vault" : section === "permissions" ? "Permission register" : "Update control"}</h1></div><div className="top-actions"><StatusPill tone="green">Verified / stable</StatusPill><button className="outline-button" onClick={() => setSetupOpen(true)}><UserRound size={16} /> Personal protocol</button></div></header>
         <button className={`voice-signal-fab ${listening ? "active" : ""}`} onClick={() => setSignalOpen((current) => !current)} aria-expanded={signalOpen} aria-label="Open local voice signal"><span><Mic size={17} /></span><b>{listening ? "VOICE ACTIVE" : "VOICE SIGNAL"}</b></button>
         <VoiceSignalDock open={signalOpen} listening={listening} close={() => setSignalOpen(false)} />
 
@@ -336,7 +338,7 @@ export default function Home() {
           <section className="metrics-row"><Metric label="CPU load" value="42" unit="%" icon={Cpu} delta="steady" /><Metric label="Memory" value="61" unit="%" icon={Database} delta="+3.2" /><Metric label="Network" value="18" unit="Mbps" icon={Network} delta="clear" /></section>
         </>}
 
-        {section === "tools" && <ToolsPanel />}
+        {(section === "tools" || section === "spatial") && <ToolsPanel focusSpatial={section === "spatial"} />}
 
         {section === "voice" && <section className="voice-layout"><div className="voice-stage" style={{ backgroundImage: `linear-gradient(145deg, rgba(4,10,24,.84), rgba(4,10,24,.38)), url(${voiceImage})` }}><div className="voice-stage-copy"><span className="eyebrow light">Voice profile / local wake word</span><h2>{language} is your active setting.</h2><p>Arthur keeps the wake word local. Speech in other library languages needs a separately approved local pack or provider.</p><div className="voice-stage-actions"><button className="primary-button" onClick={() => setListening(!listening)}><Waves size={17} /> {listening ? "Pause listening" : "Preview wake word"}</button><button className="outline-button" onClick={() => setWakeWordOpen(true)}><TerminalSquare size={16} /> Review local setup</button></div></div><div className={`voice-orbital-anchor ${listening ? "active" : ""}`} aria-label={listening ? "Arthur is listening" : "Arthur is ready"}><span className="voice-orbit voice-orbit-one" /><span className="voice-orbit voice-orbit-two" /><span className="voice-orb-core"><Mic size={27} /></span><span className="voice-orb-state">{listening ? "LISTENING" : "READY"}</span></div><div className="voice-wave" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></div></div><div className="voice-options"><div className="section-heading"><div><span className="eyebrow">Language routing</span><h3>Primary fast lane</h3></div><Languages size={19} /></div>{["Kinyarwanda", "English", "French", "Kiswahili"].map((item) => <div className="language-row" key={item}><span className={`language-radio ${language === item ? "active" : ""}`} /><div><b>{item}</b><small>{language === item ? "Active conversation language" : "Profile-ready option"}</small></div>{language === item && <StatusPill>Active</StatusPill>}</div>)}<button className="outline-button full" onClick={() => setSection("languages")}> <Languages size={16} /> Browse all language entries</button><button className="outline-button full" onClick={() => toast("Arthur would save a new pronunciation note to the active profile.")}> <Plus size={16} /> Teach a pronunciation</button></div></section>}
 
