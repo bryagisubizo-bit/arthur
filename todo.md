@@ -96,7 +96,7 @@
 - [x] Add user-editable appearance controls for typography, colour, density, motion, and visual-result preference.
 - [x] Create practical Windows build, deployment, local testing, and virtual-machine testing guidance for Arthur’s desktop prototype.
 - [x] Validate desktop and mobile interaction states.
-- [ ] Save the consent-first autonomy and Windows delivery-guidance checkpoint, then deliver the update.
+- [x] Save the consent-first autonomy and Windows delivery-guidance checkpoint, then deliver the update.
 
 ## Intent-to-Category Link Correction
 
@@ -116,3 +116,13 @@
 
 - [x] Preserve the declared primary → support → fallback chain while rendering a separate cost-versus-quality recommendation and availability-aware next-step state.
 - [x] Add regression coverage proving fallback-chain stability alongside preference-based recommendations and resource-gate handling.
+
+## Review-First Self-Customisation
+
+- [x] Add a natural-language change-request composer with interface, behavior, integration, and safety-scope classification.
+- [x] Generate a clear proposal preview containing the requested outcome, affected areas, required resources, validation steps, and rollback point.
+- [x] Require explicit approval before a proposal is marked ready for an authorized implementation path; preserve reject and revise options.
+- [x] Add regression coverage and responsive validation for the self-customisation proposal lifecycle.
+- [ ] Save a checkpoint and deliver the self-customisation update.
+- [x] Add lifecycle regression coverage for prepare, approve, reject, and revise transitions in the self-customisation proposal flow.
+- [x] Prove local appearance and colour preferences apply only after explicit approval and never on prepare, reject, or revise.
