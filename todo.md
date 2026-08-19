@@ -207,4 +207,4 @@
 - [x] Update protected Spatial-room setup so a user selects exactly one working access method rather than being required to configure a password alongside Windows Hello.
 - [x] Require OS-managed Windows Hello verification before room access when the user selected that method, and show corrective setup guidance when it is unavailable.
 - [x] Update browser preview states, desktop regression coverage, documentation, and a credential-free source bundle for the revised access model.
-- [ ] Save a checkpoint and deliver the exclusive protected Spatial-room access revision.
+- [x] Save a checkpoint and deliver the exclusive protected Spatial-room access revision.
