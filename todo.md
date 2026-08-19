@@ -65,4 +65,17 @@
 
 - [x] Verify the supported Lovable integration surface against official documentation and preserve a credential-safe boundary.
 - [x] Add a Lovable app-development capability room with its function, owner, connection status, safe test state, and setup guidance.
-- [ ] Verify the new room on desktop and mobile, save a checkpoint, and deliver the update.
+- [x] Verify the new room on desktop and mobile, save a checkpoint, and deliver the update.
+
+## Function-Classified API Placeholder Catalogue
+
+- [x] Normalize the user-supplied providers into safe functional categories, including an explicit excluded/review-required group for sensitive domains.
+- [x] Add a searchable, filterable provider placeholder catalogue that preserves function, providers, authentication pattern, owner, and availability status.
+- [x] Add safe resource-routing guidance so unsupported or unconfigured commands identify the required category and never fabricate a provider connection.
+- [x] Verify the expanded catalogue on desktop and mobile.
+- [ ] Save the function-classified API placeholder catalogue delivery checkpoint and deliver the update.
+
+## Catalogue Completion Corrections
+
+- [x] Add an explicit visible review-required and excluded-routing section with rationale for sensitive domains.
+- [x] Wire missing-resource command outcomes to a selected API category and a direct catalogue focus link.
