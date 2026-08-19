@@ -6,6 +6,18 @@ export type LanguageEntry = {
   nativeLabel: string;
   script: string;
   readiness: LanguageReadiness;
+  aliases: string[];
+  communityReview: string;
+  vitalityContext: string;
+  colloquialStatus: string;
+};
+
+export type PrivateColloquialDraft = {
+  language: string;
+  expression: string;
+  regionalContext: string;
+  sourceNote: string;
+  reviewStatus: "Private draft — not community reviewed";
 };
 
 const profileReady = new Set(["English", "Kinyarwanda", "French", "Kiswahili"]);
@@ -15,6 +27,7 @@ Kinyarwanda|rw|Ikinyarwanda|Latin
 French|fr|Français|Latin
 Kiswahili|sw|Kiswahili|Latin
 Afrikaans|af|Afrikaans|Latin
+Ainu|ain|アイヌ・イタㇰ|Kana / Latin
 Albanian|sq|Shqip|Latin
 Amharic|am|አማርኛ|Ethiopic
 Arabic|ar|العربية|Arabic
@@ -33,6 +46,7 @@ Chinese|zh|中文|Han
 Croatian|hr|Hrvatski|Latin
 Czech|cs|Čeština|Latin
 Danish|da|Dansk|Latin
+Diné Bizaad (Navajo)|nv|Diné Bizaad|Latin
 Dutch|nl|Nederlands|Latin
 Estonian|et|Eesti|Latin
 Filipino|fil|Filipino|Latin
@@ -44,12 +58,14 @@ German|de|Deutsch|Latin
 Greek|el|Ελληνικά|Greek
 Gujarati|gu|ગુજરાતી|Gujarati
 Hausa|ha|Hausa|Latin
+Hawaiian|haw|ʻŌlelo Hawaiʻi|Latin
 Hebrew|he|עברית|Hebrew
 Hindi|hi|हिन्दी|Devanagari
 Hungarian|hu|Magyar|Latin
 Icelandic|is|Íslenska|Latin
 Igbo|ig|Igbo|Latin
 Indonesian|id|Bahasa Indonesia|Latin
+Inuktitut|iu|ᐃᓄᒃᑎᑐᑦ|Canadian Aboriginal Syllabics
 Irish|ga|Gaeilge|Latin
 Italian|it|Italiano|Latin
 Japanese|ja|日本語|Kana / Han
@@ -66,6 +82,7 @@ Lithuanian|lt|Lietuvių|Latin
 Malay|ms|Bahasa Melayu|Latin
 Malayalam|ml|മലയാളം|Malayalam
 Maltese|mt|Malti|Latin
+Manx|gv|Gaelg|Latin
 Maori|mi|Te Reo Māori|Latin
 Marathi|mr|मराठी|Devanagari
 Mongolian|mn|Монгол|Cyrillic
@@ -106,29 +123,51 @@ Welsh|cy|Cymraeg|Latin
 Wolof|wo|Wolof|Latin
 Xhosa|xh|isiXhosa|Latin
 Yoruba|yo|Yorùbá|Latin
+Yuchi|yuc|Tsoyaha|Latin
 Zulu|zu|isiZulu|Latin`;
+
+const languageMetadata: Record<string, Pick<LanguageEntry, "aliases" | "communityReview" | "vitalityContext" | "colloquialStatus">> = {
+  "Diné Bizaad (Navajo)": {
+    aliases: ["Navajo", "Dine Bizaad", "Diné Bizaad"],
+    communityReview: "Navajo Nation / community review required",
+    vitalityContext: "Community-governed language — do not infer vitality from technical readiness",
+    colloquialStatus: "No colloquial expressions are bundled",
+  },
+  Ainu: { aliases: [], communityReview: "Authoritative community source required", vitalityContext: "Community revitalisation context — authoritative community source required", colloquialStatus: "No colloquial expressions are bundled" },
+  Hawaiian: { aliases: ["Olelo Hawaii"], communityReview: "Authoritative community source required", vitalityContext: "Community revitalisation context — authoritative community source required", colloquialStatus: "No colloquial expressions are bundled" },
+  Inuktitut: { aliases: [], communityReview: "Authoritative community source required", vitalityContext: "Community vitality context varies by region — authoritative community source required", colloquialStatus: "No colloquial expressions are bundled" },
+  Manx: { aliases: [], communityReview: "Authoritative community source required", vitalityContext: "Community revitalisation context — authoritative community source required", colloquialStatus: "No colloquial expressions are bundled" },
+  Yuchi: { aliases: [], communityReview: "Authoritative community source required", vitalityContext: "Community revitalisation context — authoritative community source required", colloquialStatus: "No colloquial expressions are bundled" },
+};
+
+const defaultMetadata: Pick<LanguageEntry, "aliases" | "communityReview" | "vitalityContext" | "colloquialStatus"> = {
+  aliases: [],
+  communityReview: "No community review is bundled",
+  vitalityContext: "No vitality label is bundled",
+  colloquialStatus: "No colloquial expressions are bundled",
+};
 
 export const languageLibrary: LanguageEntry[] = rows.split("\n").map((row) => {
   const [name, code, nativeLabel, script] = row.split("|");
-  return { name, code, nativeLabel, script, readiness: profileReady.has(name) ? "profile-ready" : "pack-or-provider" };
+  return { name, code, nativeLabel, script, readiness: profileReady.has(name) ? "profile-ready" : "pack-or-provider", ...(languageMetadata[name] ?? defaultMetadata) };
 });
 
 const normalise = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().trim();
 
 export function filterLanguages(query = ""): LanguageEntry[] {
   const needle = normalise(query);
-  return !needle ? languageLibrary : languageLibrary.filter((entry) => normalise(`${entry.name} ${entry.code} ${entry.nativeLabel} ${entry.script}`).includes(needle));
+  return !needle ? languageLibrary : languageLibrary.filter((entry) => normalise(`${entry.name} ${entry.code} ${entry.nativeLabel} ${entry.script} ${entry.aliases.join(" ")}`).includes(needle));
 }
 
 export function findLanguage(value: string): LanguageEntry | undefined {
   const needle = normalise(value);
-  return languageLibrary.find((entry) => [entry.name, entry.code, entry.nativeLabel].some((candidate) => normalise(candidate) === needle));
+  return languageLibrary.find((entry) => [entry.name, entry.code, entry.nativeLabel, ...entry.aliases].some((candidate) => normalise(candidate) === needle));
 }
 
 export function languageFromPreferenceRequest(request: string): LanguageEntry | undefined {
   const normalisedRequest = normalise(request);
   if (!/(speak|talk|reply|parle|vuga|ongea|sema)/.test(normalisedRequest)) return undefined;
-  return languageLibrary.find((entry) => normalisedRequest.includes(normalise(entry.name)) || normalisedRequest.includes(normalise(entry.nativeLabel)));
+  return languageLibrary.find((entry) => [entry.name, entry.nativeLabel, ...entry.aliases].some((candidate) => normalisedRequest.includes(normalise(candidate))));
 }
 
 export function prepareMultilingualSearch(query: string, selectedLanguage: string) {
@@ -144,4 +183,14 @@ export function prepareMultilingualSearch(query: string, selectedLanguage: strin
       ? "The question is prepared unchanged in the selected language. A separate approved research provider is still required to retrieve information."
       : "The question remains unchanged. Configure an approved local language pack or provider before speech, translation, or research in this language can be performed.",
   };
+}
+
+export function createPrivateColloquialDraft(languageName: string, expression: string, regionalContext: string, sourceNote: string): PrivateColloquialDraft {
+  const language = findLanguage(languageName);
+  const cleanExpression = expression.trim().slice(0, 120);
+  const cleanContext = regionalContext.trim().slice(0, 160);
+  const cleanSource = sourceNote.trim().slice(0, 240);
+  if (!language) throw new Error("Choose a language from the local library first.");
+  if (!cleanExpression || !cleanContext || !cleanSource) throw new Error("Add the expression, regional context, and source or community-review note.");
+  return { language: language.name, expression: cleanExpression, regionalContext: cleanContext, sourceNote: cleanSource, reviewStatus: "Private draft — not community reviewed" };
 }

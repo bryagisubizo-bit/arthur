@@ -243,3 +243,10 @@
 - [x] Add a user-selected active conversation language and a multilingual-search preparation flow that keeps a query in its chosen language, identifies when a translation or research provider is needed, and never performs a web search automatically.
 - [x] Add desktop and browser-preview controls for favourites, language discovery, query preparation, review/copy states, and offline language-pack guidance without auto-installing packages or transmitting text.
 - [x] Add regression coverage, Windows setup guidance, a rebuilt credential-free source bundle, checkpoint, and delivery.
+
+## Community-Reviewed Colloquial & Language-Vitality Library
+
+- [x] Add Diné Bizaad (Navajo) using its endonym, ISO code, and a community-governance/review state; do not label it extinct or invent expressions.
+- [x] Add a clearly bounded language-vitality section for selected under-resourced, endangered, and revitalization-focused languages, with uncertain status marked as needing an authoritative community source.
+- [x] Add a community-reviewed colloquial-expression framework with language and regional context, source/provenance, review status, and an empty-by-default state; do not fabricate “slang” entries or treat it as automatic translation.
+- [x] Add matching desktop and browser-preview controls, regression coverage, consent and Windows guidance, a rebuilt credential-free source bundle, checkpoint, and delivery.
