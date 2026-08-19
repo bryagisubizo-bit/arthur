@@ -152,3 +152,13 @@
 - [x] Test the revised desktop prototype, rebuild the credential-free source bundle, and update the Windows installer/build instructions.
 - [x] Save a browser-preview checkpoint documenting the desktop parity update and deliver the revised Windows source bundle.
 - [x] Attach the rebuilt credential-free Windows source bundle to the user-facing desktop-parity delivery.
+
+## First-Run Tutorial & GitHub Release Updates
+
+- [x] Configure GitHub release checks as user-initiated only, with no background polling and a separate approval for any download or installer launch.
+- [x] Document the designated GitHub release source and verified-update authorization boundary.
+- [x] Add a first-run tutorial that explains local setup, permissions, wake-word consent, API Vault, and update choices.
+- [x] Add a manual, bandwidth-aware GitHub release check with no unverified update execution.
+- [x] Test the onboarding and update controls and update the Windows guide.
+- [x] Rebuild the credential-free Windows source bundle after the tutorial and manual-update changes; verify its contents and scan it for accidental secrets.
+- [ ] Save a checkpoint and deliver the tutorial and GitHub release-update source bundle.
