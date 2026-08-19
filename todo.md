@@ -190,3 +190,13 @@
 - [x] Add a medically cautious symptom-support flow that is not a diagnosis, highlights urgent warning signs, and directs users to appropriate professional care.
 - [x] Add browser preview states, desktop-safe UI states, tests, documentation, and an updated credential-free Windows source bundle.
 - [x] Save a checkpoint and deliver the touch, gesture, and health-support expansion.
+
+## Protected Spatial-Room Expansion
+
+- [x] Document consent, revocation, local-only retention, password fallback, recovery, and non-bypass boundaries for Spatial-room access and optional face authentication.
+- [x] Add a visible user-approved optional-gesture installation requirement to the Windows setup and Spatial-room UI; never run package installation automatically.
+- [x] Add natural-language routing so an authorised user can request that Arthur opens the protected Spatial workspace by voice or text.
+- [x] Add password setup, confirmation, secure local storage, and an access gate before the protected Spatial workspace is opened.
+- [x] Add optional local face-enrolment and verification states with camera indicators, explicit consent, no uploaded biometric data, and password fallback; do not claim security parity with Windows Hello.
+- [x] Add browser-preview states, desktop regression coverage, documentation, and a credential-free source bundle.
+- [ ] Save a checkpoint and deliver the protected Spatial-room expansion.
