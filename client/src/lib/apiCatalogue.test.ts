@@ -20,6 +20,20 @@ describe("Arthur API placeholder catalogue", () => {
     expect(catalogueCounts.providers).toBeGreaterThan(120);
   });
 
+  it("lists the requested threat-intelligence providers only in the review-required defensive room", () => {
+    const security = apiCatalogue.find((category) => category.id === "security");
+    const requestedProviders = [
+      "SecurityTrails", "URLScan.io", "AlienVault OTX", "GreyNoise", "IBM X-Force", "CrowdStrike", "Microsoft Defender",
+      "Google Safe Browsing", "Have I Been Pwned", "NIST NVD", "MITRE ATT&CK", "CVE.org", "EPSS", "OpenCTI",
+      "MISP", "PhishTank", "URLhaus", "MalwareBazaar", "ThreatFox", "CIRCL",
+    ];
+
+    expect(security).toMatchObject({ auth: "Review required", owner: "Review required", reviewRequired: true });
+    expect(security?.function).toContain("never performs active scanning");
+    expect(security?.providers).toEqual(expect.arrayContaining(requestedProviders));
+    expect(new Set(security?.providers).size).toBe(security?.providers.length);
+  });
+
   it("keeps provider placeholders unique within each room and assigns category-scoped React keys", () => {
     const keys = new Set<string>();
 

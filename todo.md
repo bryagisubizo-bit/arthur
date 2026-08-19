@@ -123,6 +123,14 @@
 - [x] Generate a clear proposal preview containing the requested outcome, affected areas, required resources, validation steps, and rollback point.
 - [x] Require explicit approval before a proposal is marked ready for an authorized implementation path; preserve reject and revise options.
 - [x] Add regression coverage and responsive validation for the self-customisation proposal lifecycle.
-- [ ] Save a checkpoint and deliver the self-customisation update.
+- [x] Save a checkpoint and deliver the self-customisation update.
+- [x] Send the saved self-customisation checkpoint to the user with a concise capability summary.
 - [x] Add lifecycle regression coverage for prepare, approve, reject, and revise transitions in the self-customisation proposal flow.
 - [x] Prove local appearance and colour preferences apply only after explicit approval and never on prepare, reject, or revise.
+
+## Defensive Threat-Intelligence API Vault
+
+- [x] Add the requested security-intelligence provider placeholders under a review-required defensive category.
+- [x] Preserve provider purpose, credential pattern, ownership, connection state, and explicit non-invasive usage boundaries.
+- [x] Add regression coverage for provider count, uniqueness, and review-required routing.
+- [ ] Validate the updated API Vault on desktop and mobile, save a checkpoint, and deliver the update.
