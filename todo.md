@@ -161,4 +161,4 @@
 - [x] Add a manual, bandwidth-aware GitHub release check with no unverified update execution.
 - [x] Test the onboarding and update controls and update the Windows guide.
 - [x] Rebuild the credential-free Windows source bundle after the tutorial and manual-update changes; verify its contents and scan it for accidental secrets.
-- [ ] Save a checkpoint and deliver the tutorial and GitHub release-update source bundle.
+- [x] Save a checkpoint and deliver the tutorial and GitHub release-update source bundle.
