@@ -296,3 +296,10 @@
 - [x] Replace ambiguous provider messages with distinct saved-locally, SDK-ready, connection-test-passed, and unconnected states.
 - [x] Require an explicit user-approved live test before Arthur describes a provider as reachable or connected.
 - [x] Add regression coverage, update the Windows source handoff, checkpoint, and delivery.
+
+## Installer Permissions & Hawk Icon
+
+- [x] Add a Windows installer review page that lets the user opt in to each optional Arthur capability before installation completes.
+- [x] Persist installer choices only as initial local defaults, never as a grant of Windows microphone, camera, or background-execution permission.
+- [x] Replace the application and installer icon with the requested hawk on a blue background.
+- [x] Add regression coverage, documentation, a credential-free Windows handoff, checkpoint, and delivery.
