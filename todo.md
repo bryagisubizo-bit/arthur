@@ -271,3 +271,15 @@
 - [x] Add clearer local voice-test guidance and a spoken-introduction diagnostic that remains opt-in and reports output availability honestly.
 - [x] Add a guarded listening-readiness check that can report microphone/input availability without starting background listening or retaining speech.
 - [x] Add regression coverage, update guidance, rebuild the credential-free Windows source bundle, checkpoint, and delivery.
+
+## Installer-Ready PyInstaller Handoff
+
+- [x] Verify Arthur’s PyInstaller build script, dependency list, and Inno Setup installer configuration for a Windows handoff.
+- [x] Package the completed, credential-free Windows source and installer-build handoff with clear local build instructions.
+- [x] Validate the archive contents and deliver the PyInstaller handoff files.
+
+## Inno Setup Missing Payload Recovery
+
+- [x] Add an explicit installer-source guard that stops compilation with a clear recovery message when `dist\\Arthur\\Arthur.exe` is missing.
+- [x] Document the required order: run the Windows PyInstaller build from the project root before compiling the Inno Setup script.
+- [x] Validate the guarded handoff and deliver the exact recovery steps for the reported build failure.
