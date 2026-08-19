@@ -2,6 +2,7 @@
  * Orbital Command Atelier: asymmetric command canvas, cobalt instrumentation, and explicit consent states.
  */
 import { useMemo, useState } from "react";
+import "./greeting-panel.css";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { findProviderNeed } from "@/lib/commandRouting";
 import NotesPanel from "@/components/NotesPanel";
@@ -132,6 +133,11 @@ function VoiceSignalDock({ open, listening, close }: { open: boolean; listening:
   return <aside className="voice-signal-dock-panel" role="status" aria-live="polite"><div className="voice-signal-dock-copy"><span className="eyebrow">Local command signal</span><h2>{listening ? "Arthur is in command mode." : "Arthur is standing by."}</h2><p>This preview animates a visual cue only. In the Windows prototype, a visualizer receives a transient amplitude number only while the user has explicitly enabled local listening. It does not record or upload sound.</p><button className="outline-button" onClick={close}>Minimise signal</button></div><div className={`voice-signal-dock-orb ${listening ? "active" : ""}`}><span /><span /><b>{listening ? "LISTENING" : "READY"}</b></div></aside>;
 }
 
+function GreetingPreviewPanel({ name, title, spokenReplies, wakeGreeting, message, preview, toggleSpokenReplies, toggleWakeGreeting }: { name: string; title: string; spokenReplies: boolean; wakeGreeting: boolean; message: string; preview: (kind: "introduction" | "opening" | "wake") => void; toggleSpokenReplies: () => void; toggleWakeGreeting: () => void }) {
+  const recipient = `${title} ${name}`.trim();
+  return <section className="greeting-panel" aria-live="polite"><div className="greeting-panel-copy"><span className="eyebrow">First interaction / local only</span><h3>Arthur introduces himself on your terms.</h3><p>{message}</p><small>The Windows app speaks only when spoken replies are enabled. These controls never enable the microphone, background listening, or a provider connection.</small></div><div className="greeting-panel-actions"><div className="greeting-status"><StatusPill tone={spokenReplies ? "green" : "gray"}>{spokenReplies ? "Spoken reply enabled" : "Visual only"}</StatusPill><StatusPill tone={wakeGreeting ? "blue" : "gray"}>{wakeGreeting ? "Wake reply enabled" : "Wake reply silent"}</StatusPill></div><button className="primary-button compact" onClick={() => preview("introduction")}><Bot size={15} /> Replay introduction</button><button className="outline-button" onClick={() => preview("opening")}><Volume2 size={15} /> Preview opening greeting</button><button className="outline-button" onClick={() => preview("wake")} disabled={!wakeGreeting}><Waves size={15} /> Preview wake acknowledgement</button><button className="text-button" onClick={toggleSpokenReplies}>{spokenReplies ? "Use visual greeting only" : `Enable greeting for ${recipient}`}</button><button className="text-button" onClick={toggleWakeGreeting}>{wakeGreeting ? "Silence wake acknowledgement" : "Enable wake acknowledgement"}</button></div></section>;
+}
+
 function StatusPill({ tone = "blue", children }: { tone?: "blue" | "green" | "amber" | "gray"; children: React.ReactNode }) {
   return <span className={`status-pill ${tone}`}><span className="status-dot" />{children}</span>;
 }
@@ -247,7 +253,23 @@ export default function Home() {
   const [catalogueFocus, setCatalogueFocus] = useState<string | null>(null);
   const [backgroundPolicy, setBackgroundPolicy] = useState<BackgroundPolicy>({ enabled: false, localListening: false, actionExecution: false, spokenReply: true, visualResult: "ask" });
   const [appearance, setAppearance] = useState<AppearancePreferences>({ typeScale: "standard", density: "relaxed", motion: "calm" });
+  const [spokenReplies, setSpokenReplies] = useState(true);
+  const [wakeGreeting, setWakeGreeting] = useState(true);
+  const [greetingMessage, setGreetingMessage] = useState("Good day, Madam Aline. I am Arthur, your local desktop assistant. I am ready when you are.");
   const greeting = useMemo(() => `At your signal, ${title}.`, [title]);
+
+  const previewGreeting = (kind: "introduction" | "opening" | "wake") => {
+    const recipient = `${title} ${name}`.trim();
+    const next = kind === "introduction"
+      ? `Good day, ${recipient}. I am Arthur, your local desktop assistant. I am ready when you are.`
+      : kind === "opening"
+        ? `Good day, ${recipient}. Arthur is ready when you are.`
+        : `Yes, ${recipient}. Arthur is ready.`;
+    setGreetingMessage(next);
+    setSignalOpen(true);
+    setListening(kind === "wake");
+    toast.success(kind === "wake" ? "Wake acknowledgement previewed." : "Local greeting previewed.", { description: spokenReplies ? "The Windows prototype would use the selected local voice." : "Spoken replies are disabled; the Windows prototype would show this greeting visually." });
+  };
 
   const runCommand = () => {
     if (!command.trim()) return toast.error("Give Arthur something to prepare first.");
@@ -293,6 +315,7 @@ export default function Home() {
             <div className="hero-copy"><div className="eyebrow light">Arthur is standing by</div><h2>{greeting}</h2><p>Voice-first assistance, carefully governed. Ask in {language}, English, French, or Kiswahili.</p><div className="hero-meta"><StatusPill>Wake word ready</StatusPill><span><LockKeyhole size={14} /> Spoken replies by default</span></div></div>
             <div className={`listening-orb ${listening ? "listening" : ""}`}><span className="orbit orbit-a" /><span className="orbit orbit-b" /><span className="orb-core"><Mic size={27} /></span><span className="orb-label">{listening ? "LISTENING" : "ARTHUR"}</span></div>
           </section>
+          <GreetingPreviewPanel name={name} title={title} spokenReplies={spokenReplies} wakeGreeting={wakeGreeting} message={greetingMessage} preview={previewGreeting} toggleSpokenReplies={() => setSpokenReplies((current) => !current)} toggleWakeGreeting={() => setWakeGreeting((current) => !current)} />
           <section className="command-entry"><div className="command-prefix"><TerminalSquare size={18} /> <span>Speak or type a request</span></div><input value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => e.key === "Enter" && runCommand()} placeholder="For example: check my disk space, or show Kali WSL memory…" /><button className="voice-button" onClick={() => setListening(!listening)} aria-label="Toggle listening"><Mic size={18} /></button><button className="primary-button compact" onClick={runCommand}>Prepare <ArrowUpRight size={16} /></button></section>
           {commandPlan && <section className={`command-plan ${commandPlan.risk}`} aria-live="polite"><div className="plan-emblem">{commandPlan.missingRoom ? <AlertTriangle size={20} /> : <TerminalSquare size={20} />}</div><div className="plan-copy"><span className="eyebrow">Reviewed command plan / {commandPlan.risk}</span><h3>{commandPlan.summary}</h3><code>{commandPlan.command}</code>{commandPlan.reason && <p>{commandPlan.reason}</p>}{commandPlan.missingRoom && <div className="missing-resource-alert" role="alert"><AlertTriangle size={17} /><div><b>Missing API resource: {commandPlan.missingRoom}</b><span>Arthur has not sent a request or tried a fallback. The API Vault will focus the matching category so you can add and test an approved room.</span></div><button className="primary-button compact" onClick={() => { setCatalogueFocus(commandPlan.missingRoom ?? null); setSection("api"); }}>Open required room <KeyRound size={15} /></button></div>}</div><div className="plan-actions">{commandPlan.confirmation ? <StatusPill tone="amber">Approval required</StatusPill> : commandPlan.allowed ? <StatusPill tone="green">Read-only diagnostic</StatusPill> : <StatusPill tone="amber">Not available</StatusPill>}<button className="outline-button" onClick={() => toast(commandPlan.allowed ? "The production app would show this exact command and follow its permission policy." : commandPlan.missingRoom ? `The ${commandPlan.missingRoom} category must be added and tested before Arthur can continue.` : "Arthur will retain no raw command text in its audit record.")}>{commandPlan.allowed ? "Inspect policy" : commandPlan.missingRoom ? "Why resource is needed" : "Why blocked?"}</button></div></section>}
           <section className="command-governance"><div><span className="eyebrow">Automation governor</span><p>Arthur translates words into a small command allowlist. It never passes generated text directly to a shell.</p></div><button className={`outline-button ${automationPaused ? "pause-active" : ""}`} onClick={() => { setAutomationPaused((current) => !current); toast(automationPaused ? "Automation governor re-armed." : "Automation governor paused; new command plans remain visible but cannot proceed."); }}><Power size={16} /> {automationPaused ? "Resume approved tools" : "Pause all automation"}</button></section>

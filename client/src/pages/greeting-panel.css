@@ -1,0 +1,91 @@
+.greeting-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.78fr);
+  gap: 1.2rem;
+  margin: 1rem 0;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid rgba(85, 217, 255, 0.28);
+  background: linear-gradient(120deg, rgba(47, 107, 255, 0.11), rgba(10, 24, 49, 0.86));
+  clip-path: polygon(0 0, 98% 0, 100% 14%, 100% 100%, 2% 100%, 0 84%);
+}
+
+.greeting-panel h3 {
+  margin: 0.3rem 0;
+  font: 600 clamp(1.05rem, 2vw, 1.42rem) / 1.1 "Space Grotesk", sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.greeting-panel p {
+  margin: 0.55rem 0;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.greeting-panel small {
+  display: block;
+  max-width: 680px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.greeting-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+}
+
+.greeting-status {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.15rem;
+}
+
+.greeting-panel .text-button {
+  margin-right: 0.75rem;
+}
+
+.greeting-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 920px) {
+  .greeting-panel {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1rem;
+    clip-path: none;
+  }
+
+  .greeting-panel-actions {
+    align-items: stretch;
+  }
+
+  .greeting-panel-actions .primary-button,
+  .greeting-panel-actions .outline-button {
+    width: 100%;
+  }
+
+  .greeting-panel .text-button {
+    width: 100%;
+    margin-right: 0;
+    justify-content: flex-start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 760px) {
+  .arthur-app,
+  .command-canvas {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .command-canvas {
+    overflow-x: clip;
+  }
+}

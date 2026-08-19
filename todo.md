@@ -215,3 +215,10 @@
 - [x] Add a separately selected local-camera face-access method for the protected Spatial room when Windows Hello is not usable; require deliberate enrollment and a recovery secret.
 - [x] Add visible local camera enrolment, verification, cancellation, deletion, and failure-handling states; do not transmit images or templates and do not retain raw video.
 - [x] Add browser-preview states, desktop regression coverage, setup documentation, a credential-free source bundle, checkpoint, and delivery for the local-camera fallback.
+
+## First Interaction & Wake Greeting
+
+- [x] Add a consent-aware first-interaction introduction that welcomes the user, uses their configured preferred name or title, and explains that speaking is optional.
+- [x] Add a concise greeting when Arthur’s app window opens or the user deliberately wakes Arthur, without starting background listening or speaking after the user has disabled spoken replies.
+- [x] Add matching browser-preview interaction states, desktop regression coverage, and user-visible controls for replaying or silencing the greeting.
+- [x] Validate the greeting experience, rebuild the credential-free Windows source bundle, save a checkpoint, and deliver the update.
