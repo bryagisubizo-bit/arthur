@@ -142,4 +142,12 @@
 - [x] Keep scanning, exploitation, credential testing, malware handling, and automatic actions visibly blocked.
 - [x] Add regression coverage and validate the consent-gated defensive lookup interface.
 - [x] Ensure a permitted lookup becomes prepared only after its single-item approval, then rerun the consent and interface validation.
-- [ ] Save a checkpoint and deliver the enabled defensive lookup update.
+- [x] Save a checkpoint and deliver the enabled defensive lookup update.
+
+## Windows Desktop Parity with Live Preview
+
+- [x] Compare the current PySide6 desktop prototype against the approved live-preview navigation, design system, and workspace structure.
+- [x] Rebuild the Windows desktop navigation and visual shell in the Orbital Command Atelier style.
+- [x] Port the key preview workflows for command planning, API Vault, consent, autonomy, and personal formatting as desktop-safe states.
+- [x] Test the revised desktop prototype, rebuild the credential-free source bundle, and update the Windows installer/build instructions.
+- [ ] Save a browser-preview checkpoint documenting the desktop parity update and deliver the revised Windows source bundle.
