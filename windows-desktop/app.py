@@ -104,6 +104,17 @@ def bundled_path(relative_path: str) -> Path:
 
 LANGUAGES = ["English", "Kinyarwanda", "French", "Kiswahili"]
 PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER = "Choose your primary system language"
+SPEECH_RECOGNITION_ROUTE_PLACEHOLDER = "Choose how Arthur should recognise spoken commands"
+SPEECH_RECOGNITION_ROUTES = {
+    "local_offline": {
+        "label": "Local / offline speech recognition",
+        "detail": "Requires separate approval to install a local recognition engine and download language models. The approved engine can process audio on this PC.",
+    },
+    "developer_provider": {
+        "label": "Developer-configured speech-to-text provider",
+        "detail": "Requires an approved developer-managed provider connection and separate microphone/listening consent. Arthur does not send audio until those steps are complete.",
+    },
+}
 
 
 def profile_language_choices():
@@ -124,6 +135,22 @@ def configure_primary_language_combo(combo, selected=""):
 def selected_primary_language(combo):
     """Read a deliberate primary-language selection instead of accepting a display placeholder."""
     return str(combo.currentData() or "").strip()
+
+
+def configure_speech_recognition_route_combo(combo, selected=""):
+    """Populate the required first-run route selector without installing or connecting anything."""
+    combo.clear()
+    combo.addItem(SPEECH_RECOGNITION_ROUTE_PLACEHOLDER, "")
+    for route_id, route in SPEECH_RECOGNITION_ROUTES.items():
+        combo.addItem(route["label"], route_id)
+    selected_index = combo.findData(str(selected or "").strip())
+    combo.setCurrentIndex(selected_index if selected_index >= 0 else 0)
+
+
+def selected_speech_recognition_route(combo):
+    """Return only a deliberately selected supported recognition route."""
+    route_id = str(combo.currentData() or "").strip()
+    return route_id if route_id in SPEECH_RECOGNITION_ROUTES else ""
 
 DEFAULT_GREETING_SCRIPTS = {
     "introduction": "Good {time_of_day}, {recipient}. I am Arthur, your local desktop assistant. I am ready when you are.",
@@ -331,6 +358,7 @@ DEFAULT_CONFIG = {
         "pause_all": False,
     },
     "voice": {
+        "speech_recognition_route": "",
         "wake_word_model": "",
         "wake_word_listener_approved": False,
         "input_device": None,
@@ -414,7 +442,7 @@ class FirstRunDialog(QDialog):
         layout.addWidget(title)
         explanation = QLabel(
             "Choose the primary system language Arthur should use for both typed and voice conversations. You can change it later in Profile. "
-            "The name pronunciation field may contain a phonetic spelling or a short pronunciation note."
+            "Then choose how it should recognise spoken commands. The name pronunciation field may contain a phonetic spelling or a short pronunciation note."
         )
         explanation.setWordWrap(True)
         explanation.setObjectName("muted")
@@ -427,6 +455,12 @@ class FirstRunDialog(QDialog):
         self.pronunciation.setPlaceholderText("Example: Jean = Zhan")
         self.native_language = QComboBox()
         configure_primary_language_combo(self.native_language)
+        self.speech_route = QComboBox()
+        configure_speech_recognition_route_combo(self.speech_route)
+        self.speech_route_note = QLabel("Choose local/offline recognition or a developer-configured provider. This choice does not install software, download a model, open the microphone, record audio, or connect a provider.")
+        self.speech_route_note.setObjectName("muted")
+        self.speech_route_note.setWordWrap(True)
+        self.speech_route.currentIndexChanged.connect(self.update_speech_route_note)
         self.additional = QLineEdit()
         self.additional.setPlaceholderText("Optional: Spanish, Arabic, etc.")
         self.music = QComboBox()
@@ -436,6 +470,8 @@ class FirstRunDialog(QDialog):
         form.addRow("Name to use:", self.name)
         form.addRow("Pronunciation:", self.pronunciation)
         form.addRow("Primary system language (required):", self.native_language)
+        form.addRow("Speech recognition (required):", self.speech_route)
+        form.addRow("Route readiness:", self.speech_route_note)
         form.addRow("Other languages:", self.additional)
         form.addRow("Music source:", self.music)
         form.addRow("Wake word:", self.wake_word)
@@ -450,6 +486,11 @@ class FirstRunDialog(QDialog):
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
+    def update_speech_route_note(self):
+        route_id = selected_speech_recognition_route(self.speech_route)
+        detail = SPEECH_RECOGNITION_ROUTES.get(route_id, {}).get("detail")
+        self.speech_route_note.setText(detail or "Choose local/offline recognition or a developer-configured provider. This choice does not install software, download a model, open the microphone, record audio, or connect a provider.")
+
     def accept(self):
         if not self.name.text().strip():
             QMessageBox.warning(self, "Name required", "Please enter the name Arthur should use for you.")
@@ -457,6 +498,10 @@ class FirstRunDialog(QDialog):
         primary_language = selected_primary_language(self.native_language)
         if not primary_language:
             QMessageBox.warning(self, "Language required", "Choose the primary system language Arthur should use for typed and voice interactions.")
+            return
+        speech_route = selected_speech_recognition_route(self.speech_route)
+        if not speech_route:
+            QMessageBox.warning(self, "Speech recognition route required", "Choose local/offline speech recognition or a developer-configured speech-to-text provider before configuring the profile.")
             return
         additional = [item.strip() for item in self.additional.text().split(",") if item.strip()]
         self.completed.emit({
@@ -468,6 +513,7 @@ class FirstRunDialog(QDialog):
             "wake_word": self.wake_word.text().strip() or "Arthur",
             "title": self.title.text().strip() or "Sir",
             "spoken_only": self.spoken_only.isChecked(),
+            "speech_recognition_route": speech_route,
         })
         super().accept()
 
@@ -2109,6 +2155,14 @@ class VoiceStudioPage(QWidget):
         model_holder = QWidget()
         model_holder.setLayout(model_row)
         diagnostic_layout.addRow("Wake-word model:", model_holder)
+        route_id = str(config.get("voice", {}).get("speech_recognition_route", ""))
+        route = SPEECH_RECOGNITION_ROUTES.get(route_id)
+        self.speech_route_status = QLabel(
+            f"Selected route: {route['label']}. {route['detail']}" if route else "Speech-recognition route is not selected. Complete first-run setup before Arthur can understand spoken commands."
+        )
+        self.speech_route_status.setObjectName("muted")
+        self.speech_route_status.setWordWrap(True)
+        diagnostic_layout.addRow("Spoken commands:", self.speech_route_status)
         self.microphone = QComboBox()
         self.refresh_microphone_devices()
         microphone_row = QHBoxLayout()
@@ -2299,7 +2353,10 @@ class VoiceStudioPage(QWidget):
             QMessageBox.warning(self, "Wake-word listener unavailable", str(exc))
 
     def on_wake_word_detected(self, wake_word):
-        self.status.setText(f"Wake word detected: {wake_word}. Arthur is ready. Spoken command transcription requires a separately configured Speech-to-Text provider or local speech engine.")
+        route_id = str(self.config.get("voice", {}).get("speech_recognition_route", ""))
+        route = SPEECH_RECOGNITION_ROUTES.get(route_id)
+        route_message = route["label"] if route else "a selected speech-recognition route"
+        self.status.setText(f"Wake word detected: {wake_word}. Arthur is ready. Spoken command understanding still requires {route_message} to be separately ready; wake-word detection alone does not transcribe or perform a command.")
         if self.config.get("privacy", {}).get("spoken_only", True) and self.config.get("voice", {}).get("wake_greeting_enabled", True):
             if greeting_is_quiet(self.config):
                 self.status.setText("Wake word detected. Local Do Not Disturb is active, so Arthur will wait silently for your reviewed command.")
@@ -3590,7 +3647,7 @@ class MainWindow(QMainWindow):
         self.build_ui()
         self.apply_appearance(self.config.get("appearance", {}))
         self.build_tray()
-        if not self.config.get("setup_complete") or not self.config.get("profile", {}).get("native_language"):
+        if not self.config.get("setup_complete") or not self.config.get("profile", {}).get("native_language") or not self.config.get("voice", {}).get("speech_recognition_route"):
             QTimer.singleShot(250, self.show_first_run)
         elif self.config.get("privacy", {}).get("spoken_only", True) and self.config.get("voice", {}).get("arrival_greeting_enabled", False):
             QTimer.singleShot(650, self.play_arrival_greeting)
@@ -3834,9 +3891,11 @@ class MainWindow(QMainWindow):
                 "title": dialog.title.text().strip() or "Sir",
             })
             self.config["privacy"]["spoken_only"] = dialog.spoken_only.isChecked()
+            self.config.setdefault("voice", {})["speech_recognition_route"] = selected_speech_recognition_route(dialog.speech_route)
             self.config["setup_complete"] = True
             self.save_all()
-            QMessageBox.information(self, "Arthur is ready", f"Welcome, {self.config['profile']['display_name']}. Arthur is configured for {self.config['profile']['native_language']}.")
+            route = SPEECH_RECOGNITION_ROUTES[self.config["voice"]["speech_recognition_route"]]["label"]
+            QMessageBox.information(self, "Arthur profile configured", f"Welcome, {self.config['profile']['display_name']}. Arthur is configured for {self.config['profile']['native_language']} with {route}. Complete its separate readiness and listening approvals before Arthur can understand a spoken command.")
             self.show_tutorial()
             if self.config.get("privacy", {}).get("spoken_only", True) and self.config.get("voice", {}).get("first_interaction_greeting_enabled", True):
                 QTimer.singleShot(300, self.play_first_interaction_introduction)

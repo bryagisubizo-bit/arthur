@@ -355,3 +355,17 @@
 - [x] Require each user profile to choose a primary system language and clearly apply that choice to both typed and voice interaction preferences without enabling microphone access.
 - [x] Synchronize the desktop and browser profile-language controls, then add regression coverage for the required selection and visible voice-language state.
 - [x] Validate the revised profile flow across browser and desktop surfaces, save a checkpoint, and prepare the synchronized source for a later authorized release.
+
+## Post-Install Voice Readiness Audit
+
+- [x] Audit the installer, first-run setup, Windows microphone readiness, local wake-word model, and voice-output flows to identify exactly what is required before Arthur can respond to speech.
+- [x] If a readiness gap exists, repair it with a user-approved, consent-gated first-run step that never silently enables microphone or background listening.
+- [x] Add regression coverage and plain-language post-install guidance distinguishing immediate typed use from verified spoken-command readiness.
+- [x] Validate the desktop workflow, synchronize any repair into the release workspace, save a checkpoint, and report the honest activation path.
+
+## Required First-Run Speech-Recognition Route
+
+- [x] Add a required first-run choice between approved local/offline speech recognition and a developer-configured speech-to-text provider.
+- [x] Explain the selected route’s prerequisites and require separate approval before local engine/model installation, microphone listening, or provider connection.
+- [x] Apply the route choice to the browser preview and Windows Voice Studio, with regression coverage for selection, safe defaults, and unavailable states.
+- [x] Validate, synchronize, checkpoint, and document the spoken-command activation path without claiming command understanding before the selected route is ready.

@@ -17,7 +17,7 @@ compile(source_path.read_text(encoding="utf-8"), str(source_path), "exec")
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 
-from app import DEFAULT_CONFIG, CommandPlanner, FirstRunDialog, FirstRunTutorialDialog, MainWindow, PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER, PROVIDER_OPTIONS, is_time_in_window, profile_language_choices, render_greeting_script
+from app import DEFAULT_CONFIG, CommandPlanner, FirstRunDialog, FirstRunTutorialDialog, MainWindow, PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER, PROVIDER_OPTIONS, SPEECH_RECOGNITION_ROUTE_PLACEHOLDER, is_time_in_window, profile_language_choices, render_greeting_script
 
 
 def main():
@@ -67,6 +67,9 @@ def main():
     assert first_run.native_language.itemData(0) == ""
     assert first_run.native_language.itemText(0) == PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER
     assert first_run.native_language.currentData() == ""
+    assert first_run.speech_route.itemText(0) == SPEECH_RECOGNITION_ROUTE_PLACEHOLDER
+    assert first_run.speech_route.currentData() == ""
+    assert "This choice does not install software" in first_run.speech_route_note.text()
     assert "Diné Bizaad (Navajo)" in profile_language_choices()
     first_run.close()
     assert window.config["security"]["defensive_lookup_enabled"] is False
@@ -89,6 +92,7 @@ def main():
     assert any(button.text() == "Check microphone readiness" for button in window.voice_studio.findChildren(type(window.voice_studio.introduction_test_button)))
     assert any(button.text() == "Open Windows microphone privacy settings" for button in window.voice_studio.findChildren(type(window.voice_studio.introduction_test_button)))
     assert window.voice_studio.microphone.count() >= 1
+    assert "Speech-recognition route is not selected" in window.voice_studio.speech_route_status.text()
     assert window.voice_studio.greeting_script_kind.currentData() == "opening"
     assert window.voice_studio.greeting_script.toPlainText()
     assert window.voice_studio.time_of_day_greetings.isChecked() is False

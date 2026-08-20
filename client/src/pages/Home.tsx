@@ -8,6 +8,7 @@ import { findProviderNeed } from "@/lib/commandRouting";
 import { defaultGreetingScripts, isInLocalTimeWindow, renderGreeting, type GreetingKind } from "@/lib/greetingSchedule";
 import { languageFromPreferenceRequest } from "@/lib/languageLibrary";
 import { primarySystemLanguageOptions, requirePrimarySystemLanguage } from "@/lib/profileLanguage";
+import { requireSpeechRecognitionRoute, speechRecognitionRouteOptions } from "@/lib/speechRecognitionRoute";
 import NotesPanel from "@/components/NotesPanel";
 import LanguageLibraryPanel from "@/components/LanguageLibraryPanel";
 import CapabilityRegistry from "@/components/CapabilityRegistry";
@@ -158,20 +159,24 @@ function Metric({ label, value, unit, icon: Icon, delta }: { label: string; valu
   );
 }
 
-function SetupModal({ close, save }: { close: () => void; save: (name: string, title: string, language: string) => void }) {
+function SetupModal({ close, save }: { close: () => void; save: (name: string, title: string, language: string, speechRoute: string) => void }) {
   const [name, setName] = useState("Aline");
   const [title, setTitle] = useState("Madam");
   const [language, setLanguage] = useState("");
+  const [speechRoute, setSpeechRoute] = useState("");
   const [pronunciation, setPronunciation] = useState("Ah-lee-neh");
   const [step, setStep] = useState(1);
   const languageSelection = requirePrimarySystemLanguage(language);
+  const speechRouteSelection = requireSpeechRecognitionRoute(speechRoute);
   const continueSetup = () => {
     if (step === 2 && !languageSelection.valid) return toast.error(languageSelection.message);
-    setStep((current) => Math.min(3, current + 1));
+    if (step === 3 && !speechRouteSelection.valid) return toast.error(speechRouteSelection.message);
+    setStep((current) => Math.min(4, current + 1));
   };
   const authorizeProfile = () => {
     if (!languageSelection.valid) return toast.error(languageSelection.message);
-    save(name, title, languageSelection.language.name);
+    if (!speechRouteSelection.valid) return toast.error(speechRouteSelection.message);
+    save(name, title, languageSelection.language.name, speechRouteSelection.route.id);
   };
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Arthur first-run setup">
@@ -180,11 +185,12 @@ function SetupModal({ close, save }: { close: () => void; save: (name: string, t
         <div className="eyebrow">Arthur by Bogitech / First-run authorization</div>
         <h2>Let us make this feel personal.</h2>
         <p className="muted-copy">Arthur keeps these preferences within your profile. You remain in charge of what it remembers and what it may control.</p>
-        <div className="setup-steps"><span className={step >= 1 ? "active" : ""}>01 Identity</span><span className={step >= 2 ? "active" : ""}>02 Voice</span><span className={step >= 3 ? "active" : ""}>03 Consent</span></div>
+        <div className="setup-steps"><span className={step >= 1 ? "active" : ""}>01 Identity</span><span className={step >= 2 ? "active" : ""}>02 Language</span><span className={step >= 3 ? "active" : ""}>03 Recognition</span><span className={step >= 4 ? "active" : ""}>04 Consent</span></div>
         {step === 1 && <div className="setup-fields"><label>What should Arthur call you?<input value={name} onChange={(e) => setName(e.target.value)} /></label><label>Preferred title<select value={title} onChange={(e) => setTitle(e.target.value)}><option>Madam</option><option>Sir</option><option>Captain</option><option>Friend</option></select></label></div>}
         {step === 2 && <div className="setup-fields"><label>Primary system language (required)<select value={language} onChange={(e) => setLanguage(e.target.value)} aria-describedby="primary-language-note"><option value="">Choose your primary system language</option>{primarySystemLanguageOptions.map((entry) => <option key={entry.code} value={entry.name}>{entry.name} — {entry.nativeLabel}</option>)}</select></label><label>How do I pronounce your name?<input value={pronunciation} onChange={(e) => setPronunciation(e.target.value)} /></label><div className="language-strip" id="primary-language-note"><Languages size={17} /><span>Your selected language becomes Arthur’s default for typed and voice conversations. Choosing it does not enable the microphone, recording, translation, or any provider.</span></div></div>}
-        {step === 3 && <div className="consent-box"><ShieldCheck size={24} /><div><strong>Explicit control is enabled.</strong><p>Arthur may suggest actions, but it will ask before sending, purchasing, deleting, installing, or making administrator changes.</p></div></div>}
-        <div className="modal-actions"><button className="text-button" onClick={() => setStep(Math.max(1, step - 1))}>{step === 1 ? "" : "Back"}</button>{step < 3 ? <button className="primary-button" onClick={continueSetup}>Continue <ChevronRight size={17} /></button> : <button className="primary-button" onClick={authorizeProfile}>Authorize Arthur <ShieldCheck size={17} /></button>}</div>
+        {step === 3 && <div className="setup-fields"><label>How should Arthur understand spoken commands? (required)<select value={speechRoute} onChange={(event) => setSpeechRoute(event.target.value)}><option value="">Choose a speech-recognition route</option>{speechRecognitionRouteOptions.map((route) => <option key={route.id} value={route.id}>{route.label}</option>)}</select></label><div className="language-strip"><AudioLines size={17} /><span>{speechRouteSelection.valid ? speechRouteSelection.route.detail : "Choose a route now. This selection does not install an engine or model, enable the microphone, record audio, or connect a provider."}</span></div></div>}
+        {step === 4 && <div className="consent-box"><ShieldCheck size={24} /><div><strong>Explicit control is enabled.</strong><p>Arthur may suggest actions, but it will ask before sending, purchasing, deleting, installing, connecting a provider, or making administrator changes. Speech recognition remains unavailable until the selected route is separately ready and you approve microphone listening.</p></div></div>}
+        <div className="modal-actions"><button className="text-button" onClick={() => setStep(Math.max(1, step - 1))}>{step === 1 ? "" : "Back"}</button>{step < 4 ? <button className="primary-button" onClick={continueSetup}>Continue <ChevronRight size={17} /></button> : <button className="primary-button" onClick={authorizeProfile}>Authorize Arthur <ShieldCheck size={17} /></button>}</div>
       </div>
     </div>
   );
@@ -249,6 +255,7 @@ export default function Home() {
   const [name, setName] = useState("Aline");
   const [title, setTitle] = useState("Madam");
   const [language, setLanguage] = useState("");
+  const [speechRoute, setSpeechRoute] = useState("");
   const [command, setCommand] = useState("");
   const [visualPrompt, setVisualPrompt] = useState(true);
   const [permissions, setPermissions] = useState({ automation: true, health: true, research: true, smartHome: false });
@@ -280,6 +287,7 @@ export default function Home() {
   const [quietEnd, setQuietEnd] = useState("07:00");
   const greeting = useMemo(() => `At your signal, ${title}.`, [title]);
   const primaryLanguage = requirePrimarySystemLanguage(language);
+  const selectedSpeechRoute = requireSpeechRecognitionRoute(speechRoute);
   const languageLabel = primaryLanguage.valid ? primaryLanguage.language.name : "Language required";
   const requireProfileLanguage = () => {
     if (primaryLanguage.valid) return true;
@@ -289,6 +297,11 @@ export default function Home() {
   };
   const toggleListening = () => {
     if (!listening && !requireProfileLanguage()) return;
+    if (!listening && !selectedSpeechRoute.valid) {
+      toast.error(selectedSpeechRoute.message, { description: "Complete Personal protocol. The Windows app also requires the selected route to be ready and an explicit listening approval." });
+      setSetupOpen(true);
+      return;
+    }
     setListening((current) => !current);
   };
 
@@ -320,11 +333,13 @@ export default function Home() {
     if (plan.allowed) toast.success("Arthur prepared a reviewed local command plan.", { description: "This browser preview never executes a command or contacts a provider." });
     else toast.error("Arthur declined that command request.", { description: plan.reason });
   };
-  const saveProfile = (nextName: string, nextTitle: string, nextLanguage: string) => {
+  const saveProfile = (nextName: string, nextTitle: string, nextLanguage: string, nextSpeechRoute: string) => {
     const selection = requirePrimarySystemLanguage(nextLanguage);
     if (!selection.valid) return toast.error(selection.message);
-    setName(nextName); setTitle(nextTitle); setLanguage(selection.language.name); setSetupOpen(false);
-    toast.success(`Profile prepared for ${nextName}.`, { description: `${selection.language.name} is now the default for typed and voice interactions in this preview.` });
+    const route = requireSpeechRecognitionRoute(nextSpeechRoute);
+    if (!route.valid) return toast.error(route.message);
+    setName(nextName); setTitle(nextTitle); setLanguage(selection.language.name); setSpeechRoute(route.route.id); setSetupOpen(false);
+    toast.success(`Profile prepared for ${nextName}.`, { description: `${selection.language.name} is now the default for typed and voice interactions. ${route.route.label} is selected but not yet enabled.` });
   };
 
   return (
@@ -344,7 +359,7 @@ export default function Home() {
         <button className={`voice-signal-fab ${listening ? "active" : ""}`} onClick={() => setSignalOpen((current) => !current)} aria-expanded={signalOpen} aria-label="Open local voice signal"><span><Mic size={17} /></span><b>{listening ? "VOICE ACTIVE" : "VOICE SIGNAL"}</b></button>
         <VoiceSignalDock open={signalOpen} listening={listening} close={() => setSignalOpen(false)} />
 
-        {section === "voice" && <><ExpressionPanel colourMode={colourMode} voiceStyle={voiceStyle} setColourMode={setColourMode} setVoiceStyle={setVoiceStyle} /><VoiceControls settings={voiceSettings} toggle={(key) => setVoiceSettings((current) => ({ ...current, [key]: !current[key] }))} /></>}
+        {section === "voice" && <><section className="consent-box"><AudioLines size={24} /><div><strong>{selectedSpeechRoute.valid ? `${selectedSpeechRoute.route.label} selected` : "Speech-recognition route required"}</strong><p>{selectedSpeechRoute.valid ? `${selectedSpeechRoute.route.detail} Selecting the route alone does not make Arthur understand speech; the Windows app still requires route readiness and a separate listening approval.` : "Choose local/offline recognition or a developer-configured provider in Personal protocol before Arthur can prepare spoken commands."}</p><button className="text-button" onClick={() => setSetupOpen(true)}>Review route choice</button></div></section><ExpressionPanel colourMode={colourMode} voiceStyle={voiceStyle} setColourMode={setColourMode} setVoiceStyle={setVoiceStyle} /><VoiceControls settings={voiceSettings} toggle={(key) => setVoiceSettings((current) => ({ ...current, [key]: !current[key] }))} /></>}
 
         {section === "notes" && <NotesPanel emotionallyAware={emotionallyAware} setEmotionallyAware={setEmotionallyAware} isAuthenticated={isAuthenticated} />}
 
@@ -354,7 +369,7 @@ export default function Home() {
 
         {section === "command" && <>
           <section className="hero-command" style={{ backgroundImage: `linear-gradient(90deg, rgba(5, 11, 24, .95) 18%, rgba(5,11,24,.42) 72%, rgba(5,11,24,.86)), url(${heroImage})` }}>
-            <div className="hero-copy"><div className="eyebrow light">Arthur is standing by</div><h2>{greeting}</h2><p>Voice-first assistance, carefully governed. {primaryLanguage.valid ? `Your primary typed and voice language is ${languageLabel}; use the Language library to change it.` : "Choose a primary system language in Personal protocol before Arthur prepares typed or voice interactions."}</p><div className="hero-meta"><StatusPill tone={primaryLanguage.valid ? "green" : "amber"}>{primaryLanguage.valid ? "Language selected" : "Language selection required"}</StatusPill><span><LockKeyhole size={14} /> Spoken replies by default</span></div></div>
+            <div className="hero-copy"><div className="eyebrow light">Arthur is standing by</div><h2>{greeting}</h2><p>Voice-first assistance, carefully governed. {primaryLanguage.valid ? `Your primary typed and voice language is ${languageLabel}; use the Language library to change it.` : "Choose a primary system language in Personal protocol before Arthur prepares typed or voice interactions."} {selectedSpeechRoute.valid ? `${selectedSpeechRoute.route.label} is selected; it must be separately ready before speech can be understood.` : "Choose a speech-recognition route in Personal protocol before Arthur prepares spoken commands."}</p><div className="hero-meta"><StatusPill tone={primaryLanguage.valid ? "green" : "amber"}>{primaryLanguage.valid ? "Language selected" : "Language selection required"}</StatusPill><StatusPill tone={selectedSpeechRoute.valid ? "blue" : "amber"}>{selectedSpeechRoute.valid ? "Recognition route selected" : "Recognition route required"}</StatusPill><span><LockKeyhole size={14} /> Spoken replies by default</span></div></div>
             <div className={`listening-orb ${listening ? "listening" : ""}`}><span className="orbit orbit-a" /><span className="orbit orbit-b" /><span className="orb-core"><Mic size={27} /></span><span className="orb-label">{listening ? "LISTENING" : "ARTHUR"}</span></div>
           </section>
           <GreetingPreviewPanel name={name} title={title} spokenReplies={spokenReplies} wakeGreeting={wakeGreeting} message={greetingMessage} scripts={greetingScripts} activeKind={activeGreetingKind} setActiveKind={setActiveGreetingKind} updateScript={(value) => setGreetingScripts((current) => ({ ...current, [activeGreetingKind]: value.slice(0, 240) }))} restoreScript={() => setGreetingScripts((current) => ({ ...current, [activeGreetingKind]: defaultGreetingScripts[activeGreetingKind] }))} timeOfDay={timeOfDayGreetings} setTimeOfDay={setTimeOfDayGreetings} quietHours={quietHoursEnabled} setQuietHours={setQuietHoursEnabled} quietStart={quietStart} setQuietStart={setQuietStart} quietEnd={quietEnd} setQuietEnd={setQuietEnd} preview={previewGreeting} toggleSpokenReplies={() => setSpokenReplies((current) => !current)} toggleWakeGreeting={() => setWakeGreeting((current) => !current)} />
