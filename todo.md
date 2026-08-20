@@ -386,3 +386,9 @@
 ## Build Archive Content Correction
 
 - [x] Rebuild the credential-free Windows handoff archive to include its documented PowerShell build script and BUILD_PYINSTALLER_INNO.md guide, then verify the exact archive paths and instructions match.
+
+## Pillow Packaging-Regression Recovery
+
+- [x] Ensure Arthur’s isolated Windows build environment installs Pillow before icon-packaging regressions import PIL.
+- [x] Update the PyInstaller/Inno Setup handoff guidance with the exact safe recovery and retry command for the reported missing-Pillow error.
+- [x] Validate the corrected dependency declaration and rebuild the credential-free handoff archive before providing the retry instructions.

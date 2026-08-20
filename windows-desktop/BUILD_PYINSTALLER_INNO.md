@@ -29,6 +29,13 @@ powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 
 The PowerShell entry point invokes the reviewed `build_windows.bat` workflow. It creates or reuses `.venv`, installs `requirements.txt`, runs the desktop regression tests, uses `Arthur.spec` to build the executable with PyInstaller, and then calls Inno Setup if it finds `ISCC.exe`.
 
+If an earlier build stopped at `ModuleNotFoundError: No module named 'PIL'`, run the following once from the same source folder, then run the one-command build again. `Pillow` is now included in `requirements.txt`, so a newly extracted handoff installs it automatically.
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install "Pillow>=10,<12"
+powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
+```
+
 If PowerShell blocks the command, use:
 
 ```powershell
