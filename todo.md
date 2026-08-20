@@ -309,4 +309,4 @@
 - [x] Require the installer user to select one Spatial Room protection method—local password, OS-managed Windows Hello, or local camera face access—before completing setup.
 - [x] Store the selected method only as the initial Spatial Room access configuration; retain no biometric data and do not grant Windows permissions.
 - [x] Validate installer and update metadata, then prepare credential-free release assets for the existing GitHub update workflow.
-- [ ] Publish the approved GitHub release and report how Arthur identifies the update.
+- [x] Publish the approved GitHub release and report how Arthur identifies the update.
