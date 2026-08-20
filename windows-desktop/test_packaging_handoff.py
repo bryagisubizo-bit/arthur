@@ -19,7 +19,7 @@ class PackagingHandoffTests(unittest.TestCase):
     def test_build_script_runs_tests_pyinstaller_and_inno_setup_when_available(self) -> None:
         script = (ROOT / "build_windows.bat").read_text(encoding="utf-8")
         self.assertIn("for %%F in (test_*.py)", script)
-        self.assertIn("python -m PyInstaller --noconfirm --clean --windowed --name Arthur app.py", script)
+        self.assertIn("python -m PyInstaller --noconfirm --clean Arthur.spec", script)
         self.assertIn("ISCC.exe", script)
         self.assertIn("Inno Setup 7\\ISCC.exe", script)
         self.assertIn("installer\\output\\ArthurSetup-0.1.0.exe", script)
@@ -49,6 +49,13 @@ class PackagingHandoffTests(unittest.TestCase):
         self.assertIn('fill="#083B8E"', hawk_svg)
         self.assertGreater((ROOT / "assets" / "arthur_hawk.png").stat().st_size, 0)
         self.assertGreater((ROOT / "assets" / "arthur_hawk.ico").stat().st_size, 0)
+
+    def test_wake_word_runtime_is_collected_for_the_windows_installer(self) -> None:
+        spec = (ROOT / "Arthur.spec").read_text(encoding="utf-8")
+        self.assertIn('collect_data_files("openwakeword")', spec)
+        self.assertIn('collect_submodules("openwakeword")', spec)
+        self.assertIn('"onnxruntime"', spec)
+        self.assertIn('"sounddevice"', spec)
 
     def test_build_handoff_contains_no_obvious_live_secret(self) -> None:
         payload = "\n".join(

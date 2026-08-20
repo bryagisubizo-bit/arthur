@@ -1978,7 +1978,7 @@ class VoiceStudioPage(QWidget):
         diagnostics = QGroupBox("Local voice diagnostics")
         diagnostic_layout = QFormLayout(diagnostics)
         self.model_path = QLineEdit(config.get("voice", {}).get("wake_word_model", ""))
-        self.model_path.setPlaceholderText("Select an approved local .tflite wake-word model")
+        self.model_path.setPlaceholderText("Select an approved local .onnx or .tflite wake-word model")
         browse = QPushButton("Choose model")
         browse.clicked.connect(self.choose_model)
         model_row = QHBoxLayout()
@@ -2032,7 +2032,12 @@ class VoiceStudioPage(QWidget):
         layout.addStretch()
 
     def choose_model(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Select wake-word model", str(BASE_DIR), "TensorFlow Lite model (*.tflite)")
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select wake-word model",
+            str(BASE_DIR),
+            "Wake-word model (*.onnx *.tflite)",
+        )
         if path:
             self.model_path.setText(path)
             self.check_wake_word()

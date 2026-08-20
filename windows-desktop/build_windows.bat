@@ -30,7 +30,7 @@ for %%F in (test_*.py) do (
 
 echo.
 echo Building Arthur.exe with PyInstaller ...
-python -m PyInstaller --noconfirm --clean --windowed --name Arthur app.py
+python -m PyInstaller --noconfirm --clean Arthur.spec
 if errorlevel 1 goto :build_failed
 if not exist "dist\Arthur\Arthur.exe" (
   echo PyInstaller did not produce dist\Arthur\Arthur.exe.

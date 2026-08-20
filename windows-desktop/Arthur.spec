@@ -1,12 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+
+
+openwakeword_datas = collect_data_files("openwakeword")
+openwakeword_hiddenimports = collect_submodules("openwakeword") + ["onnxruntime", "sounddevice"]
+
+
 a = Analysis(
     ['app.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets/arthur_hawk.svg', 'assets'), ('assets/arthur_hawk.ico', 'assets')],
-    hiddenimports=[],
+    datas=[('assets/arthur_hawk.svg', 'assets'), ('assets/arthur_hawk.ico', 'assets')] + openwakeword_datas,
+    hiddenimports=openwakeword_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

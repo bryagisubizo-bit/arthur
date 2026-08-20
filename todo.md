@@ -317,8 +317,14 @@
 - [x] Add a Windows sensor service with clear unavailable states for hardware readings Windows cannot expose, including CPU/GPU temperature without a user-approved local adapter.
 - [x] Add matching browser-preview sensor controls, consent explanations, status cards, and manual refresh behavior.
 - [x] Add regression coverage, update the installer first-run preference import and Windows documentation, then synchronize credential-free source for release.
-- [ ] Publish and verify a v0.1.1 GitHub Windows-installer release with updater-compatible SHA-256 metadata.
+- [x] Publish and verify a v0.1.1 GitHub Windows-installer release with updater-compatible SHA-256 metadata.
 
 ## GitHub Repository Retargeting
 
 - [x] Retarget Arthur’s manual updater defaults, Windows guidance, release workflow, and release publication from `bryagisubizo-bit/arthur-live-preview` to `bryagisubizo-bit/arthur`.
+
+## Wake-Word Setup & Windows Compatibility
+
+- [x] Provide a user-approved Windows PowerShell setup script and guide for installing openWakeWord dependencies and obtaining verified local models.
+- [x] Correct Arthur’s model selection and diagnostics so Windows-supported ONNX models are accepted alongside TFLite models where the local runtime supports them.
+- [ ] Add regression coverage and publish a corrected Windows installer release with updater-compatible SHA-256 metadata.

@@ -12,6 +12,9 @@ from pathlib import Path
 from typing import Optional
 
 
+SUPPORTED_WAKE_MODEL_SUFFIXES = {".onnx", ".tflite"}
+
+
 @dataclass(frozen=True)
 class DiagnosticResult:
     ready: bool
@@ -35,15 +38,15 @@ def diagnose_wake_word(model_path: str = "") -> DiagnosticResult:
         return DiagnosticResult(
             False,
             "Select a verified wake-word model",
-            "Installation alone does not create an Arthur model. Choose a local .tflite model, then run a microphone check.",
+            "Installation alone does not create an Arthur model. Choose a local .onnx or .tflite model, then run a microphone check.",
         )
 
     path = Path(model_path).expanduser()
-    if not path.is_file() or path.suffix.casefold() != ".tflite":
+    if not path.is_file() or path.suffix.casefold() not in SUPPORTED_WAKE_MODEL_SUFFIXES:
         return DiagnosticResult(
             False,
             "Wake-word model is unavailable",
-            "Choose an existing verified .tflite wake-word model. Arthur will not start listening until one is selected.",
+            "Choose an existing verified .onnx or .tflite wake-word model. On Windows, prefer the ONNX model format supplied by openWakeWord. Arthur will not start listening until one is selected.",
         )
 
     return DiagnosticResult(

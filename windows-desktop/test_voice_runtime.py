@@ -15,13 +15,21 @@ class VoiceRuntimeTests(unittest.TestCase):
         self.assertFalse(result.ready)
         self.assertIn("model", result.headline.casefold())
 
-    def test_non_tflite_model_never_reports_ready(self):
+    def test_unsupported_model_never_reports_ready(self):
         with patch.dict("sys.modules", {"openwakeword": object(), "sounddevice": object()}):
             with tempfile.TemporaryDirectory() as directory:
                 model = Path(directory) / "unverified.txt"
                 model.write_text("not a model", encoding="utf-8")
                 result = diagnose_wake_word(str(model))
         self.assertFalse(result.ready)
+
+    def test_existing_onnx_model_reports_ready_without_opening_microphone(self):
+        with patch.dict("sys.modules", {"openwakeword": object(), "sounddevice": object()}):
+            with tempfile.TemporaryDirectory() as directory:
+                model = Path(directory) / "arthur.onnx"
+                model.write_bytes(b"placeholder test model")
+                result = diagnose_wake_word(str(model))
+        self.assertTrue(result.ready)
 
     def test_speech_is_not_attempted_when_runtime_is_unavailable(self):
         runtime = VoiceRuntime()
