@@ -17,7 +17,7 @@ compile(source_path.read_text(encoding="utf-8"), str(source_path), "exec")
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 
-from app import DEFAULT_CONFIG, CommandPlanner, FirstRunTutorialDialog, MainWindow, PROVIDER_OPTIONS, is_time_in_window, render_greeting_script
+from app import DEFAULT_CONFIG, CommandPlanner, FirstRunDialog, FirstRunTutorialDialog, MainWindow, PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER, PROVIDER_OPTIONS, is_time_in_window, profile_language_choices, render_greeting_script
 
 
 def main():
@@ -46,9 +46,9 @@ def main():
     assert window.nav_labels[10] == "Language library"
     assert window.nav_labels[11] == "API vault"
     assert window.nav_labels[12] == "System sensors"
-    assert window.config["profile"]["active_conversation_language"] == "English"
+    assert window.config["profile"]["active_conversation_language"] == ""
     assert window.language_library_page.catalogue_list.count() > 80
-    assert "Selected: English" in window.language_library_page.active_label.text()
+    assert "Selected: " in window.language_library_page.active_label.text()
     assert window.language_library_page.save_colloquial_draft_button.text() == "Save private local draft"
     assert window.language_library_page.import_identifier_table_button.text() == "Choose local ISO 639-3 table"
     assert window.language_library_page.preview_colloquial_review_button.text() == "Prepare review preview"
@@ -62,6 +62,13 @@ def main():
     assert "Diné Bizaad" in window.language_library_page.catalogue_list.item(0).text()
     assert "No bundled source-confirmed example" in window.language_library_page.source_confirmed_examples.text()
     assert "No research request prepared" in window.language_library_page.query_result.text()
+    first_run = FirstRunDialog(window)
+    assert "Bogitech" in first_run.windowTitle()
+    assert first_run.native_language.itemData(0) == ""
+    assert first_run.native_language.itemText(0) == PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER
+    assert first_run.native_language.currentData() == ""
+    assert "Diné Bizaad (Navajo)" in profile_language_choices()
+    first_run.close()
     assert window.config["security"]["defensive_lookup_enabled"] is False
     assert window.config["interaction"]["spatial_room_access_method"] == ""
     assert window.config["sensors"]["enabled"] is False

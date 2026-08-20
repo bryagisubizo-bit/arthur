@@ -85,6 +85,7 @@ from PySide6.QtWidgets import (
 )
 
 APP_NAME = "Arthur"
+APP_PUBLISHER = "Bogitech"
 BASE_DIR = Path(__file__).resolve().parent
 # An installed application cannot rely on write access to Program Files.  Keep
 # user settings and the installer consent record in the current user's AppData.
@@ -102,6 +103,28 @@ def bundled_path(relative_path: str) -> Path:
     return Path(getattr(sys, "_MEIPASS", BASE_DIR)) / relative_path
 
 LANGUAGES = ["English", "Kinyarwanda", "French", "Kiswahili"]
+PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER = "Choose your primary system language"
+
+
+def profile_language_choices():
+    """Return all bundled local language labels for an explicit profile choice."""
+    return tuple(entry.name for entry in merged_catalogue())
+
+
+def configure_primary_language_combo(combo, selected=""):
+    """Populate a profile selector with a non-language placeholder and local catalogue entries."""
+    combo.clear()
+    combo.addItem(PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER, "")
+    for language in profile_language_choices():
+        combo.addItem(language, language)
+    selected_index = combo.findData(str(selected or "").strip())
+    combo.setCurrentIndex(selected_index if selected_index >= 0 else 0)
+
+
+def selected_primary_language(combo):
+    """Read a deliberate primary-language selection instead of accepting a display placeholder."""
+    return str(combo.currentData() or "").strip()
+
 DEFAULT_GREETING_SCRIPTS = {
     "introduction": "Good {time_of_day}, {recipient}. I am Arthur, your local desktop assistant. I am ready when you are.",
     "opening": "Good {time_of_day}, {recipient}. Arthur is ready when you are.",
@@ -259,10 +282,10 @@ DEFAULT_CONFIG = {
     "profile": {
         "display_name": "",
         "pronunciation": "",
-        "native_language": "English",
+        "native_language": "",
         "additional_languages": [],
         "language_favourites": ["English", "Kinyarwanda", "French", "Kiswahili"],
-        "active_conversation_language": "English",
+        "active_conversation_language": "",
         "music_source": "Not configured",
         "wake_word": "Arthur",
         "title": "Sir",
@@ -382,7 +405,7 @@ class FirstRunDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Welcome to Arthur")
+        self.setWindowTitle("Welcome to Arthur by Bogitech")
         self.setModal(True)
         self.setMinimumWidth(560)
         layout = QVBoxLayout(self)
@@ -390,7 +413,7 @@ class FirstRunDialog(QDialog):
         title.setObjectName("dialogTitle")
         layout.addWidget(title)
         explanation = QLabel(
-            "Arthur will speak to you using these preferences. You can change them later in Profile. "
+            "Choose the primary system language Arthur should use for both typed and voice conversations. You can change it later in Profile. "
             "The name pronunciation field may contain a phonetic spelling or a short pronunciation note."
         )
         explanation.setWordWrap(True)
@@ -403,7 +426,7 @@ class FirstRunDialog(QDialog):
         self.pronunciation = QLineEdit()
         self.pronunciation.setPlaceholderText("Example: Jean = Zhan")
         self.native_language = QComboBox()
-        self.native_language.addItems(LANGUAGES)
+        configure_primary_language_combo(self.native_language)
         self.additional = QLineEdit()
         self.additional.setPlaceholderText("Optional: Spanish, Arabic, etc.")
         self.music = QComboBox()
@@ -412,7 +435,7 @@ class FirstRunDialog(QDialog):
         self.title = QLineEdit("Sir")
         form.addRow("Name to use:", self.name)
         form.addRow("Pronunciation:", self.pronunciation)
-        form.addRow("Native language:", self.native_language)
+        form.addRow("Primary system language (required):", self.native_language)
         form.addRow("Other languages:", self.additional)
         form.addRow("Music source:", self.music)
         form.addRow("Wake word:", self.wake_word)
@@ -431,11 +454,15 @@ class FirstRunDialog(QDialog):
         if not self.name.text().strip():
             QMessageBox.warning(self, "Name required", "Please enter the name Arthur should use for you.")
             return
+        primary_language = selected_primary_language(self.native_language)
+        if not primary_language:
+            QMessageBox.warning(self, "Language required", "Choose the primary system language Arthur should use for typed and voice interactions.")
+            return
         additional = [item.strip() for item in self.additional.text().split(",") if item.strip()]
         self.completed.emit({
             "display_name": self.name.text().strip(),
             "pronunciation": self.pronunciation.text().strip(),
-            "native_language": self.native_language.currentText(),
+            "native_language": primary_language,
             "additional_languages": additional,
             "music_source": self.music.currentText(),
             "wake_word": self.wake_word.text().strip() or "Arthur",
@@ -2923,14 +2950,13 @@ class ProfilePage(QWidget):
         self.name = QLineEdit(profile.get("display_name", ""))
         self.pronunciation = QLineEdit(profile.get("pronunciation", ""))
         self.native = QComboBox()
-        self.native.addItems(LANGUAGES)
-        self.native.setCurrentText(profile.get("native_language", "English"))
+        configure_primary_language_combo(self.native, profile.get("native_language", ""))
         self.additional = QLineEdit(", ".join(profile.get("additional_languages", [])))
         self.wake = QLineEdit(profile.get("wake_word", "Arthur"))
         self.title_field = QLineEdit(profile.get("title", "Sir"))
         form.addRow("Name:", self.name)
         form.addRow("Pronunciation:", self.pronunciation)
-        form.addRow("Native language:", self.native)
+        form.addRow("Primary system language (required):", self.native)
         form.addRow("Additional languages:", self.additional)
         form.addRow("Wake word:", self.wake)
         form.addRow("Title:", self.title_field)
@@ -2941,16 +2967,21 @@ class ProfilePage(QWidget):
         layout.addStretch()
 
     def save(self):
+        primary_language = selected_primary_language(self.native)
+        if not primary_language:
+            QMessageBox.warning(self, "Language required", "Choose the primary system language Arthur should use for typed and voice interactions.")
+            return
         self.config["profile"].update({
             "display_name": self.name.text().strip(),
             "pronunciation": self.pronunciation.text().strip(),
-            "native_language": self.native.currentText(),
+            "native_language": primary_language,
+            "active_conversation_language": primary_language,
             "additional_languages": [x.strip() for x in self.additional.text().split(",") if x.strip()],
             "wake_word": self.wake.text().strip() or "Arthur",
             "title": self.title_field.text().strip() or "Sir",
         })
         self.save_callback()
-        QMessageBox.information(self, "Profile saved", "Arthur will use the updated identity and language preferences.")
+        QMessageBox.information(self, "Profile saved", f"Arthur will use {primary_language} for typed and voice interactions. This does not enable microphone access.")
 
 
 class ConductMemoryPage(QWidget):
@@ -3559,7 +3590,7 @@ class MainWindow(QMainWindow):
         self.build_ui()
         self.apply_appearance(self.config.get("appearance", {}))
         self.build_tray()
-        if not self.config.get("setup_complete"):
+        if not self.config.get("setup_complete") or not self.config.get("profile", {}).get("native_language"):
             QTimer.singleShot(250, self.show_first_run)
         elif self.config.get("privacy", {}).get("spoken_only", True) and self.config.get("voice", {}).get("arrival_greeting_enabled", False):
             QTimer.singleShot(650, self.play_arrival_greeting)
@@ -3795,9 +3826,9 @@ class MainWindow(QMainWindow):
             self.config["profile"].update({
                 "display_name": dialog.name.text().strip(),
                 "pronunciation": dialog.pronunciation.text().strip(),
-                "native_language": dialog.native_language.currentText(),
+                "native_language": selected_primary_language(dialog.native_language),
                 "additional_languages": [x.strip() for x in dialog.additional.text().split(",") if x.strip()],
-                "active_conversation_language": dialog.native_language.currentText(),
+                "active_conversation_language": selected_primary_language(dialog.native_language),
                 "music_source": dialog.music.currentText(),
                 "wake_word": dialog.wake_word.text().strip() or "Arthur",
                 "title": dialog.title.text().strip() or "Sir",

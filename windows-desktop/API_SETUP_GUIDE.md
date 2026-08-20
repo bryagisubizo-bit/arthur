@@ -1,4 +1,4 @@
-# Arthur Developer API Acquisition Guide
+# Arthur by Bogitech — Developer API Acquisition Guide
 
 This guide identifies the values Arthur needs and where the developer obtains them. Enter only regenerated credentials locally through Arthur’s administrator settings or a protected server secret manager. Never paste a secret into chat, a browser preview, source code, a public ZIP, or a desktop client distributed to users.
 

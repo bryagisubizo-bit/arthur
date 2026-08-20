@@ -7,6 +7,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { findProviderNeed } from "@/lib/commandRouting";
 import { defaultGreetingScripts, isInLocalTimeWindow, renderGreeting, type GreetingKind } from "@/lib/greetingSchedule";
 import { languageFromPreferenceRequest } from "@/lib/languageLibrary";
+import { primarySystemLanguageOptions, requirePrimarySystemLanguage } from "@/lib/profileLanguage";
 import NotesPanel from "@/components/NotesPanel";
 import LanguageLibraryPanel from "@/components/LanguageLibraryPanel";
 import CapabilityRegistry from "@/components/CapabilityRegistry";
@@ -160,21 +161,30 @@ function Metric({ label, value, unit, icon: Icon, delta }: { label: string; valu
 function SetupModal({ close, save }: { close: () => void; save: (name: string, title: string, language: string) => void }) {
   const [name, setName] = useState("Aline");
   const [title, setTitle] = useState("Madam");
-  const [language, setLanguage] = useState("Kinyarwanda");
+  const [language, setLanguage] = useState("");
   const [pronunciation, setPronunciation] = useState("Ah-lee-neh");
   const [step, setStep] = useState(1);
+  const languageSelection = requirePrimarySystemLanguage(language);
+  const continueSetup = () => {
+    if (step === 2 && !languageSelection.valid) return toast.error(languageSelection.message);
+    setStep((current) => Math.min(3, current + 1));
+  };
+  const authorizeProfile = () => {
+    if (!languageSelection.valid) return toast.error(languageSelection.message);
+    save(name, title, languageSelection.language.name);
+  };
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Arthur first-run setup">
       <div className="setup-modal">
         <button className="icon-button close-modal" onClick={close} aria-label="Close setup"><X size={18} /></button>
-        <div className="eyebrow">Arthur / First-run authorization</div>
+        <div className="eyebrow">Arthur by Bogitech / First-run authorization</div>
         <h2>Let us make this feel personal.</h2>
         <p className="muted-copy">Arthur keeps these preferences within your profile. You remain in charge of what it remembers and what it may control.</p>
         <div className="setup-steps"><span className={step >= 1 ? "active" : ""}>01 Identity</span><span className={step >= 2 ? "active" : ""}>02 Voice</span><span className={step >= 3 ? "active" : ""}>03 Consent</span></div>
         {step === 1 && <div className="setup-fields"><label>What should Arthur call you?<input value={name} onChange={(e) => setName(e.target.value)} /></label><label>Preferred title<select value={title} onChange={(e) => setTitle(e.target.value)}><option>Madam</option><option>Sir</option><option>Captain</option><option>Friend</option></select></label></div>}
-        {step === 2 && <div className="setup-fields"><label>Native language<select value={language} onChange={(e) => setLanguage(e.target.value)}><option>Kinyarwanda</option><option>English</option><option>French</option><option>Kiswahili</option></select></label><label>How do I pronounce your name?<input value={pronunciation} onChange={(e) => setPronunciation(e.target.value)} /></label><div className="language-strip"><Languages size={17} /><span>Arthur will switch naturally across Kinyarwanda, English, French, and Kiswahili when you do.</span></div></div>}
+        {step === 2 && <div className="setup-fields"><label>Primary system language (required)<select value={language} onChange={(e) => setLanguage(e.target.value)} aria-describedby="primary-language-note"><option value="">Choose your primary system language</option>{primarySystemLanguageOptions.map((entry) => <option key={entry.code} value={entry.name}>{entry.name} — {entry.nativeLabel}</option>)}</select></label><label>How do I pronounce your name?<input value={pronunciation} onChange={(e) => setPronunciation(e.target.value)} /></label><div className="language-strip" id="primary-language-note"><Languages size={17} /><span>Your selected language becomes Arthur’s default for typed and voice conversations. Choosing it does not enable the microphone, recording, translation, or any provider.</span></div></div>}
         {step === 3 && <div className="consent-box"><ShieldCheck size={24} /><div><strong>Explicit control is enabled.</strong><p>Arthur may suggest actions, but it will ask before sending, purchasing, deleting, installing, or making administrator changes.</p></div></div>}
-        <div className="modal-actions"><button className="text-button" onClick={() => setStep(Math.max(1, step - 1))}>{step === 1 ? "" : "Back"}</button>{step < 3 ? <button className="primary-button" onClick={() => setStep(step + 1)}>Continue <ChevronRight size={17} /></button> : <button className="primary-button" onClick={() => save(name, title, language)}>Authorize Arthur <ShieldCheck size={17} /></button>}</div>
+        <div className="modal-actions"><button className="text-button" onClick={() => setStep(Math.max(1, step - 1))}>{step === 1 ? "" : "Back"}</button>{step < 3 ? <button className="primary-button" onClick={continueSetup}>Continue <ChevronRight size={17} /></button> : <button className="primary-button" onClick={authorizeProfile}>Authorize Arthur <ShieldCheck size={17} /></button>}</div>
       </div>
     </div>
   );
@@ -238,7 +248,7 @@ export default function Home() {
   const [listening, setListening] = useState(false);
   const [name, setName] = useState("Aline");
   const [title, setTitle] = useState("Madam");
-  const [language, setLanguage] = useState("Kinyarwanda");
+  const [language, setLanguage] = useState("");
   const [command, setCommand] = useState("");
   const [visualPrompt, setVisualPrompt] = useState(true);
   const [permissions, setPermissions] = useState({ automation: true, health: true, research: true, smartHome: false });
@@ -269,8 +279,21 @@ export default function Home() {
   const [quietStart, setQuietStart] = useState("22:00");
   const [quietEnd, setQuietEnd] = useState("07:00");
   const greeting = useMemo(() => `At your signal, ${title}.`, [title]);
+  const primaryLanguage = requirePrimarySystemLanguage(language);
+  const languageLabel = primaryLanguage.valid ? primaryLanguage.language.name : "Language required";
+  const requireProfileLanguage = () => {
+    if (primaryLanguage.valid) return true;
+    toast.error(primaryLanguage.message, { description: "Open Personal protocol to select the language Arthur should use for typed and voice interaction." });
+    setSetupOpen(true);
+    return false;
+  };
+  const toggleListening = () => {
+    if (!listening && !requireProfileLanguage()) return;
+    setListening((current) => !current);
+  };
 
   const previewGreeting = (kind: GreetingKind, automatic = false) => {
+    if (!requireProfileLanguage()) return;
     const recipient = `${title} ${name}`.trim();
     const now = new Date(); const current = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     if (automatic && quietHoursEnabled && isInLocalTimeWindow(current, quietStart, quietEnd)) {
@@ -286,6 +309,7 @@ export default function Home() {
   };
 
   const runCommand = () => {
+    if (!requireProfileLanguage()) return;
     if (!command.trim()) return toast.error("Give Arthur something to prepare first.");
     const plan = planCommandPreview(command);
     setCommandPlan(plan);
@@ -297,18 +321,20 @@ export default function Home() {
     else toast.error("Arthur declined that command request.", { description: plan.reason });
   };
   const saveProfile = (nextName: string, nextTitle: string, nextLanguage: string) => {
-    setName(nextName); setTitle(nextTitle); setLanguage(nextLanguage); setSetupOpen(false);
-    toast.success(`Profile prepared for ${nextName}.`, { description: "Preferences are preview-only in this browser." });
+    const selection = requirePrimarySystemLanguage(nextLanguage);
+    if (!selection.valid) return toast.error(selection.message);
+    setName(nextName); setTitle(nextTitle); setLanguage(selection.language.name); setSetupOpen(false);
+    toast.success(`Profile prepared for ${nextName}.`, { description: `${selection.language.name} is now the default for typed and voice interactions in this preview.` });
   };
 
   return (
     <main className={`arthur-app colour-${colourMode} type-${appearance.typeScale} density-${appearance.density} motion-${appearance.motion}`}>
       <aside className="instrument-rail">
-        <div className="brand-lockup"><img src={hawkMarkImage} alt="Arthur hawk mark" /><div><strong>ARTHUR</strong><span>orbital command atelier</span></div><img className="brand-orbital-mark" src={markImage} alt="" aria-hidden="true" /></div>
+        <div className="brand-lockup"><img src={hawkMarkImage} alt="Arthur hawk mark" /><div><strong>ARTHUR</strong><span>orbital command atelier · Bogitech</span></div><img className="brand-orbital-mark" src={markImage} alt="" aria-hidden="true" /></div>
         <nav aria-label="Arthur sections">
           {nav.map(([id, Icon, label]) => <button key={id} className={`nav-item ${section === id ? "active" : ""}`} onClick={() => setSection(id)}><Icon size={19} /><span>{label}</span></button>)}
         </nav>
-        <div className="rail-bottom"><div className="rail-profile"><span className="profile-avatar">{name.slice(0, 1).toUpperCase()}</span><div><b>{name}</b><small>{language}</small></div><ChevronRight size={16} /></div><button className="nav-item ghost" onClick={() => toast("Preview system notes", { description: "The production desktop app keeps diagnostics local unless you explicitly choose to share them." })}><CircleHelp size={18} /><span>System notes</span></button></div>
+        <div className="rail-bottom"><button className="rail-profile" onClick={() => setSetupOpen(true)} aria-label="Open personal protocol"><span className="profile-avatar">{name.slice(0, 1).toUpperCase()}</span><div><b>{name}</b><small>{languageLabel}</small></div><ChevronRight size={16} /></button><button className="nav-item ghost" onClick={() => toast("Preview system notes", { description: "The production desktop app keeps diagnostics local unless you explicitly choose to share them." })}><CircleHelp size={18} /><span>System notes</span></button></div>
       </aside>
 
       <section className={`command-canvas ${section === "persona" ? "persona-active" : ""}`}>
@@ -324,15 +350,15 @@ export default function Home() {
 
         {section === "autonomy" && <AutonomyPanel policy={backgroundPolicy} setPolicy={setBackgroundPolicy} appearance={appearance} setAppearance={setAppearance} setColourMode={setColourMode} openPermissions={() => setSection("permissions")} openApiVault={(category) => { setCatalogueFocus(category ?? null); setSection("api"); }} />}
 
-        {section === "languages" && <LanguageLibraryPanel activeLanguage={language} setActiveLanguage={setLanguage} />}
+        {section === "languages" && <LanguageLibraryPanel activeLanguage={language} setActiveLanguage={(nextLanguage) => { const selection = requirePrimarySystemLanguage(nextLanguage); if (!selection.valid) return; setLanguage(selection.language.name); toast.success(`${selection.language.name} is now your primary typed and voice language in this preview.`); }} />}
 
         {section === "command" && <>
           <section className="hero-command" style={{ backgroundImage: `linear-gradient(90deg, rgba(5, 11, 24, .95) 18%, rgba(5,11,24,.42) 72%, rgba(5,11,24,.86)), url(${heroImage})` }}>
-            <div className="hero-copy"><div className="eyebrow light">Arthur is standing by</div><h2>{greeting}</h2><p>Voice-first assistance, carefully governed. Your active language is {language}; use the Language library to select another before Arthur prepares speech or research.</p><div className="hero-meta"><StatusPill>Wake word ready</StatusPill><span><LockKeyhole size={14} /> Spoken replies by default</span></div></div>
+            <div className="hero-copy"><div className="eyebrow light">Arthur is standing by</div><h2>{greeting}</h2><p>Voice-first assistance, carefully governed. {primaryLanguage.valid ? `Your primary typed and voice language is ${languageLabel}; use the Language library to change it.` : "Choose a primary system language in Personal protocol before Arthur prepares typed or voice interactions."}</p><div className="hero-meta"><StatusPill tone={primaryLanguage.valid ? "green" : "amber"}>{primaryLanguage.valid ? "Language selected" : "Language selection required"}</StatusPill><span><LockKeyhole size={14} /> Spoken replies by default</span></div></div>
             <div className={`listening-orb ${listening ? "listening" : ""}`}><span className="orbit orbit-a" /><span className="orbit orbit-b" /><span className="orb-core"><Mic size={27} /></span><span className="orb-label">{listening ? "LISTENING" : "ARTHUR"}</span></div>
           </section>
           <GreetingPreviewPanel name={name} title={title} spokenReplies={spokenReplies} wakeGreeting={wakeGreeting} message={greetingMessage} scripts={greetingScripts} activeKind={activeGreetingKind} setActiveKind={setActiveGreetingKind} updateScript={(value) => setGreetingScripts((current) => ({ ...current, [activeGreetingKind]: value.slice(0, 240) }))} restoreScript={() => setGreetingScripts((current) => ({ ...current, [activeGreetingKind]: defaultGreetingScripts[activeGreetingKind] }))} timeOfDay={timeOfDayGreetings} setTimeOfDay={setTimeOfDayGreetings} quietHours={quietHoursEnabled} setQuietHours={setQuietHoursEnabled} quietStart={quietStart} setQuietStart={setQuietStart} quietEnd={quietEnd} setQuietEnd={setQuietEnd} preview={previewGreeting} toggleSpokenReplies={() => setSpokenReplies((current) => !current)} toggleWakeGreeting={() => setWakeGreeting((current) => !current)} />
-          <section className="command-entry"><div className="command-prefix"><TerminalSquare size={18} /> <span>Speak or type a request</span></div><input value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => e.key === "Enter" && runCommand()} placeholder="For example: check my disk space, or show Kali WSL memory…" /><button className="voice-button" onClick={() => setListening(!listening)} aria-label="Toggle listening"><Mic size={18} /></button><button className="primary-button compact" onClick={runCommand}>Prepare <ArrowUpRight size={16} /></button></section>
+          <section className="command-entry"><div className="command-prefix"><TerminalSquare size={18} /> <span>Speak or type a request</span></div><input value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => e.key === "Enter" && runCommand()} placeholder="For example: check my disk space, or show Kali WSL memory…" /><button className="voice-button" onClick={toggleListening} aria-label="Toggle listening"><Mic size={18} /></button><button className="primary-button compact" onClick={runCommand}>Prepare <ArrowUpRight size={16} /></button></section>
           {commandPlan && <section className={`command-plan ${commandPlan.risk}`} aria-live="polite"><div className="plan-emblem">{commandPlan.missingRoom ? <AlertTriangle size={20} /> : <TerminalSquare size={20} />}</div><div className="plan-copy"><span className="eyebrow">Reviewed command plan / {commandPlan.risk}</span><h3>{commandPlan.summary}</h3><code>{commandPlan.command}</code>{commandPlan.reason && <p>{commandPlan.reason}</p>}{commandPlan.missingRoom && <div className="missing-resource-alert" role="alert"><AlertTriangle size={17} /><div><b>Missing API resource: {commandPlan.missingRoom}</b><span>Arthur has not sent a request or tried a fallback. The API Vault will focus the matching category so you can add and test an approved room.</span></div><button className="primary-button compact" onClick={() => { setCatalogueFocus(commandPlan.missingRoom ?? null); setSection("api"); }}>Open required room <KeyRound size={15} /></button></div>}</div><div className="plan-actions">{commandPlan.confirmation ? <StatusPill tone="amber">Approval required</StatusPill> : commandPlan.allowed ? <StatusPill tone="green">Read-only diagnostic</StatusPill> : <StatusPill tone="amber">Not available</StatusPill>}<button className="outline-button" onClick={() => toast(commandPlan.allowed ? "The production app would show this exact command and follow its permission policy." : commandPlan.missingRoom ? `The ${commandPlan.missingRoom} category must be added and tested before Arthur can continue.` : "Arthur will retain no raw command text in its audit record.")}>{commandPlan.allowed ? "Inspect policy" : commandPlan.missingRoom ? "Why resource is needed" : "Why blocked?"}</button></div></section>}
           <section className="command-governance"><div><span className="eyebrow">Automation governor</span><p>Arthur translates words into a small command allowlist. It never passes generated text directly to a shell.</p></div><button className={`outline-button ${automationPaused ? "pause-active" : ""}`} onClick={() => { setAutomationPaused((current) => !current); toast(automationPaused ? "Automation governor re-armed." : "Automation governor paused; new command plans remain visible but cannot proceed."); }}><Power size={16} /> {automationPaused ? "Resume approved tools" : "Pause all automation"}</button></section>
           <section className="quick-grid"><button onClick={() => setCommand("Summarize my calendar and alert me to conflicts")}> <BellRing size={17} /> Prepare day brief</button><button onClick={() => setCommand("Check workstation health and explain any bottleneck")}> <CircleGauge size={17} /> Prepare health readout</button><button onClick={() => setCommand("Research the latest information and give me a spoken summary")}> <Search size={17} /> Prepare private research</button><button onClick={() => setSection("permissions")}> <ShieldCheck size={17} /> Inspect permissions</button></section>

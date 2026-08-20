@@ -348,3 +348,10 @@
 - [x] Generate and package multi-resolution PNG, ICO, and SVG assets while preserving the existing blue, cobalt, cyan, and amber design language.
 - [x] Apply the new hawk identity consistently in the desktop window, tray, executable, installer, and browser-preview branding.
 - [x] Add packaging checks and visual validation, then prepare the refreshed assets for the next authorized release.
+
+## Bogitech Identity & Required Profile Language
+
+- [x] Replace Arthur’s displayed developer/publisher identity with Bogitech throughout the browser preview, desktop app, installer, and release guidance.
+- [x] Require each user profile to choose a primary system language and clearly apply that choice to both typed and voice interaction preferences without enabling microphone access.
+- [x] Synchronize the desktop and browser profile-language controls, then add regression coverage for the required selection and visible voice-language state.
+- [x] Validate the revised profile flow across browser and desktop surfaces, save a checkpoint, and prepare the synchronized source for a later authorized release.

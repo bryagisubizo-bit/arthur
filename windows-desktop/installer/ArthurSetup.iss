@@ -2,7 +2,7 @@
 #ifndef MyAppVersion
 #define MyAppVersion "0.1.0"
 #endif
-#define MyAppPublisher "Arthur Developer"
+#define MyAppPublisher "Bogitech"
 #define MyAppExeName "Arthur.exe"
 
 #ifexist "..\dist\Arthur\Arthur.exe"
