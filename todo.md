@@ -310,3 +310,15 @@
 - [x] Store the selected method only as the initial Spatial Room access configuration; retain no biometric data and do not grant Windows permissions.
 - [x] Validate installer and update metadata, then prepare credential-free release assets for the existing GitHub update workflow.
 - [x] Publish the approved GitHub release and report how Arthur identifies the update.
+
+## Local Hardware Sensors & v0.1.1 Release
+
+- [x] Add an explicit local-only opt-in for Arthur to collect on-demand and in-app CPU, memory, storage, battery, network, and Windows-exposed thermal sensor readings; do not enable background monitoring or transmit telemetry by default.
+- [x] Add a Windows sensor service with clear unavailable states for hardware readings Windows cannot expose, including CPU/GPU temperature without a user-approved local adapter.
+- [x] Add matching browser-preview sensor controls, consent explanations, status cards, and manual refresh behavior.
+- [x] Add regression coverage, update the installer first-run preference import and Windows documentation, then synchronize credential-free source for release.
+- [ ] Publish and verify a v0.1.1 GitHub Windows-installer release with updater-compatible SHA-256 metadata.
+
+## GitHub Repository Retargeting
+
+- [ ] Retarget Arthur’s manual updater defaults, Windows guidance, release workflow, and release publication from `bryagisubizo-bit/arthur-live-preview` to `bryagisubizo-bit/arthur`.

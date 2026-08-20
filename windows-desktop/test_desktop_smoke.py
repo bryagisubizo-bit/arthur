@@ -36,14 +36,15 @@ def main():
 
     application = QApplication.instance() or QApplication([])
     window = MainWindow()
-    assert window.nav_list.count() == 15
-    assert window.pages.count() == 15
+    assert window.nav_list.count() == 16
+    assert window.pages.count() == 16
     assert window.nav_labels[0] == "Command desk"
     assert window.nav_labels[2] == "Spatial workspace"
     assert window.nav_labels[3] == "Symptom support"
     assert window.nav_labels[6] == "Voice signal"
     assert window.nav_labels[10] == "Language library"
     assert window.nav_labels[11] == "API vault"
+    assert window.nav_labels[12] == "System sensors"
     assert window.config["profile"]["active_conversation_language"] == "English"
     assert window.language_library_page.catalogue_list.count() > 80
     assert "Selected: English" in window.language_library_page.active_label.text()
@@ -62,6 +63,10 @@ def main():
     assert "No research request prepared" in window.language_library_page.query_result.text()
     assert window.config["security"]["defensive_lookup_enabled"] is False
     assert window.config["interaction"]["spatial_room_access_method"] == ""
+    assert window.config["sensors"]["enabled"] is False
+    assert window.sensors_page.enabled.isChecked() is False
+    assert "Local sensor diagnostics are off" in window.sensors_page.status.text()
+    assert window.sensors_page.refresh_button.isEnabled() is False
     assert window.updates_page.manual_only.isChecked() is True
     assert window.updates_page.manual_only.isEnabled() is False
     assert window.voice_studio.listener is None

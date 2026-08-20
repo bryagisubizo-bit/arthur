@@ -85,6 +85,7 @@ begin
   CapabilityPage.Add('Allow Arthur to remain ready after its window closes (does not start listening)');
   CapabilityPage.Add('Allow API Vault and smart-home provider setup screens (does not contact any service)');
   CapabilityPage.Add('Allow reviewed PC-action setup (each action still needs in-app approval)');
+  CapabilityPage.Add('Allow local system sensor diagnostics (CPU, memory, storage, battery, network, and Windows-exposed temperature; no telemetry)');
 
   SpatialProtectionPage := CreateInputOptionPage(
     CapabilityPage.ID,
@@ -119,12 +120,13 @@ begin
     ConsentFile := ConsentDirectory + '\installer_permissions.json';
     ForceDirectories(ConsentDirectory);
     Content := '{' + #13#10 +
-      '  "schema": 1,' + #13#10 +
+      '  "schema": 2,' + #13#10 +
       '  "microphone_wake_word": ' + ChoiceValue(0) + ',' + #13#10 +
       '  "camera_features": ' + ChoiceValue(1) + ',' + #13#10 +
       '  "background_ready": ' + ChoiceValue(2) + ',' + #13#10 +
       '  "network_provider_setup": ' + ChoiceValue(3) + ',' + #13#10 +
       '  "reviewed_pc_actions": ' + ChoiceValue(4) + ',' + #13#10 +
+      '  "local_sensor_diagnostics": ' + ChoiceValue(5) + ',' + #13#10 +
       '  "spatial_room_protection": "' + SpatialProtectionValue + '"' + #13#10 +
       '}';
     SaveStringToFile(ConsentFile, Content, False);

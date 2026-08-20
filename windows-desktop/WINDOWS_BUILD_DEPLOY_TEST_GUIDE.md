@@ -31,9 +31,15 @@ Inno Setup supports 64-bit Windows applications, produces a single installation 
 
 ### Installer permission review
 
-Before Arthur is copied to Windows, the installer shows **Arthur permissions review**. It offers separate, optional choices for local wake listening, local camera features, background readiness, smart-home connections, and provider/API setup. Leaving every option unchecked installs Arthur with its safest local defaults.
+Before Arthur is copied to Windows, the installer shows **Arthur permissions review**. It offers separate, optional choices for local wake listening, local camera features, background readiness, smart-home connections, provider/API setup, and local system sensor diagnostics. Leaving every option unchecked installs Arthur with its safest local defaults.
 
 These choices are recorded only as first-run Arthur preferences in a local file. They do **not** grant Windows microphone, camera, notification, network, Windows Hello, smart-home, or background-execution permission. Arthur still shows a separate in-app explanation and Windows shows its own system prompt or privacy setting when a feature first needs access. A user can decline an installer choice and enable a capability later, or accept a choice and still deny the later Windows permission.
+
+### Local system sensors
+
+Arthur’s **System sensors** workspace is disabled by default unless the installer user chose local diagnostics. When enabled, the user can manually refresh transient CPU, memory, system-drive, battery, and network-adapter readings. Arthur does not retain a history, upload readings, install a monitoring program, or read sensors while this workspace is closed.
+
+Windows may expose one or more ACPI thermal zones; Arthur shows a temperature only when Windows returns one. A missing temperature is not an error and does not imply the PC lacks a sensor. CPU and GPU telemetry generally requires a compatible local adapter; Arthur reports this as unavailable and never installs or launches such an adapter without a separate user-approved integration.
 
 ### Limited-internet setup commands
 
@@ -99,7 +105,7 @@ Arthur uses **manual update checks only**. It does not poll GitHub in the backgr
 | Select one release asset and choose **Approve selected download** | Download only that user-selected HTTPS asset and verify its SHA-256 digest when GitHub provides one. A missing digest or mismatch blocks the release; a mismatched local file is deleted. | Launch or install the asset. |
 | Review the verified local installer | Make a second, independent choice to ask Windows to open an existing `.exe` or `.msi` installer. The installer retains its own elevation and prompts. | Accept an update silently, elevate a process, or complete installer prompts on the user’s behalf. |
 
-The built-in default source is `bryagisubizo-bit/arthur-live-preview`. At the time this guide was revised, that repository had no published GitHub Release, so Arthur will correctly report that no release metadata is available. Before distribution, publish a versioned GitHub Release containing the reviewed installer and its checksum or signature.[5]
+The built-in default source is `bryagisubizo-bit/arthur`. Release `v0.1.0` is available as the first verified installer release. Arthur reads new versioned releases manually, and accepts only an asset that GitHub reports with a `sha256:` digest before presenting the separate Windows installer handoff.[5]
 
 ## 4. Test locally before release
 

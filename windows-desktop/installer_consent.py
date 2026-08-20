@@ -20,6 +20,7 @@ CONSENT_KEYS = (
     "background_ready",
     "network_provider_setup",
     "reviewed_pc_actions",
+    "local_sensor_diagnostics",
 )
 
 SPATIAL_PROTECTION_METHODS = (
@@ -57,6 +58,7 @@ def apply_installer_defaults(config: dict[str, Any], consent: dict[str, bool | s
     privacy = updated.setdefault("privacy", {})
     integrations = updated.setdefault("integrations", {})
     interaction = updated.setdefault("interaction", {})
+    sensors = updated.setdefault("sensors", {})
 
     # A microphone choice only permits Arthur to offer the user-controlled
     # wake-word setup.  It never starts the listener and cannot bypass Windows.
@@ -75,6 +77,10 @@ def apply_installer_defaults(config: dict[str, Any], consent: dict[str, bool | s
     # camera access still needs separate visible enrolment. Arthur uses it only
     # to take the user to the selected setup flow on the first room entry.
     interaction["installer_spatial_room_protection"] = choices["spatial_room_protection"]
+
+    # This enables only an in-app local reading surface selected in the wizard.
+    # It grants no Windows permission, starts no background service, and sends no telemetry.
+    sensors["enabled"] = choices["local_sensor_diagnostics"]
 
     # Camera and PC-control choices remain informational until their separate,
     # in-app consent flows are completed.

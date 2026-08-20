@@ -9,7 +9,7 @@ from github_update import build_release_record, download_release_asset, fetch_la
 
 
 def main():
-    assert validate_repository("bryagisubizo-bit/arthur-live-preview") == "bryagisubizo-bit/arthur-live-preview"
+    assert validate_repository("bryagisubizo-bit/arthur") == "bryagisubizo-bit/arthur"
     try:
         validate_repository("https://github.com/owner/repo")
     except ValueError:

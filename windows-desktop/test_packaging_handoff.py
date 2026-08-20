@@ -35,6 +35,8 @@ class PackagingHandoffTests(unittest.TestCase):
         self.assertIn("#ifexist \"..\\dist\\Arthur\\Arthur.exe\"", installer)
         self.assertIn("Arthur.exe is missing.", installer)
         self.assertIn("Arthur permissions review", installer)
+        self.assertIn("local system sensor diagnostics", installer)
+        self.assertIn('"local_sensor_diagnostics"', installer)
         self.assertIn("installer_permissions.json", installer)
         self.assertIn("SetupIconFile=..\\assets\\arthur_hawk.ico", installer)
         self.assertIn("False,\n    False\n  );", installer)

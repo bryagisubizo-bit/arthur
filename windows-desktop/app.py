@@ -46,6 +46,7 @@ from voice_runtime import VoiceRuntime, available_input_devices, diagnose_wake_w
 from windows_hello import availability as windows_hello_availability, verify as verify_windows_hello
 from provider_connection import run_approved_connection_test, setup_state
 from installer_consent import apply_installer_defaults, load_installer_consent
+from system_sensors import collect_snapshot
 from PySide6.QtGui import QAction, QDesktopServices, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -81,11 +82,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
-try:
-    import psutil
-except ImportError:
-    psutil = None
 
 APP_NAME = "Arthur"
 BASE_DIR = Path(__file__).resolve().parent
@@ -336,12 +332,15 @@ DEFAULT_CONFIG = {
         "spatial_room_face_camera_index": 0,
         "spatial_room_face_audio_cues": False,
     },
+    "sensors": {
+        "enabled": False,
+    },
     "notes": [],
     "security": {
         "defensive_lookup_enabled": False,
     },
     "updates": {
-        "github_repository": "bryagisubizo-bit/arthur-live-preview",
+        "github_repository": "bryagisubizo-bit/arthur",
         "manual_check_only": True,
         "last_checked_release": "",
     },
@@ -801,8 +800,8 @@ class Dashboard(QWidget):
         metrics.setSpacing(14)
         self.cpu = self.metric_card("CPU LOAD", "-- %", "LOCAL SIGNAL")
         self.ram = self.metric_card("MEMORY", "-- %", "LOCAL SIGNAL")
-        self.gpu = self.metric_card("GPU LOAD", "—", "SENSOR OPTIONAL")
-        self.temp = self.metric_card("SYSTEM TEMP", "—", "SENSOR OPTIONAL")
+        self.gpu = self.metric_card("GPU LOAD", "—", "LOCAL / OPT-IN")
+        self.temp = self.metric_card("SYSTEM TEMP", "—", "LOCAL / OPT-IN")
         for index, card in enumerate([self.cpu, self.ram, self.gpu, self.temp]):
             metrics.addWidget(card, index // 2, index % 2)
         layout.addLayout(metrics)
@@ -848,16 +847,19 @@ class Dashboard(QWidget):
         return card
 
     def update_metrics(self):
-        if psutil is None:
+        if not self.config.setdefault("sensors", {}).get("enabled", False):
             for card in [self.cpu, self.gpu, self.ram, self.temp]:
-                card.value_label.setText("Unavailable")
+                card.value_label.setText("Permission off")
             return
-        self.cpu.value_label.setText(f"{psutil.cpu_percent(interval=None):.0f}%")
-        self.ram.value_label.setText(f"{psutil.virtual_memory().percent:.0f}%")
-        self.gpu.value_label.setText("Optional sensor")
-        temperatures = getattr(psutil, "sensors_temperatures", lambda: {})()
-        readings = [reading.current for values in temperatures.values() for reading in values if getattr(reading, "current", None) is not None]
-        self.temp.value_label.setText(f"{max(readings):.0f}°C" if readings else "No sensor")
+        # The dashboard polls only while its page is visible. Arthur collects no
+        # readings when this workspace is closed, hidden, or in the tray.
+        if not self.isVisible():
+            return
+        snapshot = collect_snapshot()
+        self.cpu.value_label.setText(snapshot["cpu"]["value"])
+        self.ram.value_label.setText(snapshot["memory"]["value"])
+        self.gpu.value_label.setText(snapshot["gpu"]["value"])
+        self.temp.value_label.setText(snapshot["temperature"]["value"])
 
     def handle_command(self):
         request = self.command.text().strip()
@@ -968,6 +970,93 @@ class Dashboard(QWidget):
             self.command_result.setText(f"ACTION NOT COMPLETED\n{error}")
         finally:
             self.execute_plan.setEnabled(False)
+
+
+class SystemSensorsPage(QWidget):
+    """Visible, local-only diagnostics. No readings are retained or uploaded."""
+
+    SENSOR_LABELS = (
+        ("cpu", "CPU usage"),
+        ("memory", "Memory"),
+        ("storage", "System storage"),
+        ("battery", "Battery"),
+        ("network", "Network adapter"),
+        ("temperature", "Thermal zone"),
+        ("gpu", "GPU telemetry"),
+    )
+
+    def __init__(self, config, save_callback, parent=None):
+        super().__init__(parent)
+        self.config = config
+        self.save_callback = save_callback
+        self.cards = {}
+        layout = QVBoxLayout(self)
+        title = QLabel("Local system sensors")
+        title.setObjectName("pageTitle")
+        layout.addWidget(title)
+        note = QLabel("Arthur reads these on this Windows PC only after you enable them. It does not send readings to a provider, store historical telemetry, install a hardware-monitoring service, or collect readings while this workspace is closed.")
+        note.setObjectName("muted")
+        note.setWordWrap(True)
+        layout.addWidget(note)
+        self.enabled = QCheckBox("Enable local sensor readings while this workspace is open")
+        self.enabled.setChecked(config.setdefault("sensors", {}).get("enabled", False))
+        self.enabled.toggled.connect(self.set_enabled)
+        layout.addWidget(self.enabled)
+        controls = QHBoxLayout()
+        self.refresh_button = QPushButton("Refresh local readings")
+        self.refresh_button.setObjectName("primaryButton")
+        self.refresh_button.clicked.connect(self.refresh)
+        controls.addWidget(self.refresh_button)
+        controls.addStretch()
+        layout.addLayout(controls)
+        self.status = QLabel()
+        self.status.setObjectName("safetyBoundary")
+        self.status.setWordWrap(True)
+        layout.addWidget(self.status)
+        grid = QGridLayout()
+        grid.setSpacing(14)
+        for index, (key, label) in enumerate(self.SENSOR_LABELS):
+            card = QFrame()
+            card.setObjectName("metricCard")
+            card_layout = QVBoxLayout(card)
+            heading = QLabel(label.upper())
+            heading.setObjectName("metricLabel")
+            value = QLabel("Permission off")
+            value.setObjectName("metricValue")
+            detail = QLabel("No local reading requested.")
+            detail.setObjectName("muted")
+            detail.setWordWrap(True)
+            card_layout.addWidget(heading)
+            card_layout.addWidget(value)
+            card_layout.addWidget(detail)
+            self.cards[key] = (value, detail)
+            grid.addWidget(card, index // 2, index % 2)
+        layout.addLayout(grid)
+        layout.addStretch()
+        self.refresh()
+
+    def set_enabled(self, enabled):
+        self.config.setdefault("sensors", {})["enabled"] = bool(enabled)
+        self.save_callback()
+        self.refresh()
+
+    def refresh(self):
+        if not self.enabled.isChecked():
+            self.refresh_button.setEnabled(False)
+            self.status.setText("Local sensor diagnostics are off. Enable the visible permission above to request transient readings on this device.")
+            for value, detail in self.cards.values():
+                value.setText("Permission off")
+                detail.setText("No local reading requested.")
+            return
+        self.refresh_button.setEnabled(True)
+        snapshot = collect_snapshot()
+        for key, (value, detail) in self.cards.items():
+            reading = snapshot[key]
+            value.setText(reading["value"])
+            detail.setText(reading["detail"])
+        unavailable = [key for key, reading in snapshot.items() if reading["state"] == "unavailable"]
+        suffix = " Some readings are unavailable; this is expected on hardware Windows does not expose." if unavailable else ""
+        self.status.setText("Fresh local readings displayed. Arthur did not save or transmit them." + suffix)
 
 
 class ToolsRoutingPage(QWidget):
@@ -3096,7 +3185,12 @@ class PermissionsPage(QWidget):
         self.screen.setChecked(privacy.get("allow_screen_analysis", False))
         self.broad = QCheckBox("Allow broad PC access (still confirmation-gated for risky actions)")
         self.broad.setChecked(privacy.get("allow_broad_pc_access", False))
-        for item in [self.background, self.wake_background, self.spoken, self.confirm, self.screen, self.broad]:
+        self.local_sensors = QCheckBox("Allow local hardware sensor readings only while Arthur's Sensor workspace is open")
+        self.local_sensors.setChecked(config.setdefault("sensors", {}).get("enabled", False))
+        self.sensor_note = QLabel("Temperature appears only when Windows exposes a thermal zone. CPU/GPU temperature otherwise requires a separately approved compatible local adapter; Arthur does not install one and never uploads telemetry.")
+        self.sensor_note.setObjectName("muted")
+        self.sensor_note.setWordWrap(True)
+        for item in [self.background, self.wake_background, self.spoken, self.confirm, self.screen, self.broad, self.local_sensors, self.sensor_note]:
             layout.addWidget(item)
         install_wake_word = QPushButton("Install openWakeWord after approval…")
         install_wake_word.clicked.connect(self.install_openwakeword)
@@ -3115,6 +3209,7 @@ class PermissionsPage(QWidget):
             "allow_screen_analysis": self.screen.isChecked(),
             "allow_broad_pc_access": self.broad.isChecked(),
         })
+        self.config.setdefault("sensors", {})["enabled"] = self.local_sensors.isChecked()
         self.save_callback()
         QMessageBox.information(self, "Permissions saved", "Arthur’s permission policy has been updated.")
 
@@ -3192,7 +3287,7 @@ class UpdatesPage(QWidget):
         settings = config.setdefault("updates", {})
         release_group = QGroupBox("Manual GitHub Releases check")
         release_layout = QFormLayout(release_group)
-        self.repository = QLineEdit(settings.get("github_repository", "bryagisubizo-bit/arthur-live-preview"))
+        self.repository = QLineEdit(settings.get("github_repository", "bryagisubizo-bit/arthur"))
         self.repository.setPlaceholderText("owner/repository")
         release_layout.addRow("Repository:", self.repository)
         self.github_token = QLineEdit(get_secret("Updates"))
@@ -3402,7 +3497,7 @@ class MainWindow(QMainWindow):
         self.nav_list = QListWidget()
         self.nav_labels = [
             "Command desk", "Tools & routing", "Spatial workspace", "Symptom support", "Reviewed commands", "Voice studio", "Voice signal", "Conduct & memory",
-            "Private notes", "Autonomy & change", "Language library", "API vault", "Permissions", "Updates", "Profile",
+            "Private notes", "Autonomy & change", "Language library", "API vault", "System sensors", "Permissions", "Updates", "Profile",
         ]
         for item in self.nav_labels:
             self.nav_list.addItem(QListWidgetItem(item))
@@ -3460,6 +3555,8 @@ class MainWindow(QMainWindow):
         self.pages.addWidget(self.language_library_page)
         self.integration_page = self.build_integrations_page()
         self.pages.addWidget(self.integration_page)
+        self.sensors_page = SystemSensorsPage(self.config, self.save_all)
+        self.pages.addWidget(self.sensors_page)
         self.permissions_page = PermissionsPage(self.config, self.save_all)
         self.pages.addWidget(self.permissions_page)
         self.updates_page = UpdatesPage(self.config, self.save_all, self.show_tutorial)

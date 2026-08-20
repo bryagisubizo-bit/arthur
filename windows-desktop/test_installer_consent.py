@@ -25,15 +25,16 @@ class InstallerConsentTests(unittest.TestCase):
     def test_choices_do_not_start_listening_or_grant_os_permissions(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "installer_permissions.json"
-            path.write_text(json.dumps({"microphone_wake_word": True, "background_ready": True}), encoding="utf-8")
+            path.write_text(json.dumps({"microphone_wake_word": True, "background_ready": True, "local_sensor_diagnostics": True}), encoding="utf-8")
             config = apply_installer_defaults(
-                {"voice": {}, "autonomy": {}, "privacy": {}, "integrations": {}},
+                {"voice": {}, "autonomy": {}, "privacy": {}, "integrations": {}, "sensors": {}},
                 load_installer_consent(path),
             )
         self.assertTrue(config["voice"]["wake_word_listener_approved"])
         self.assertTrue(config["autonomy"]["background_ready"])
         self.assertFalse(config["autonomy"]["local_listening"])
         self.assertFalse(config["privacy"]["wake_word_background_enabled"])
+        self.assertTrue(config["sensors"]["enabled"])
 
 
 if __name__ == "__main__":
