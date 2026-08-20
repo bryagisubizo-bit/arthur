@@ -11,6 +11,8 @@ import re
 import unittest
 from pathlib import Path
 
+from PIL import Image
+
 
 ROOT = Path(__file__).resolve().parent
 
@@ -49,6 +51,14 @@ class PackagingHandoffTests(unittest.TestCase):
         self.assertIn('fill="#083B8E"', hawk_svg)
         self.assertGreater((ROOT / "assets" / "arthur_hawk.png").stat().st_size, 0)
         self.assertGreater((ROOT / "assets" / "arthur_hawk.ico").stat().st_size, 0)
+
+        with Image.open(ROOT / "assets" / "arthur_hawk.png") as source:
+            self.assertEqual(source.size, (512, 512))
+            self.assertEqual(source.mode, "RGBA")
+
+        required_sizes = {(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)}
+        with Image.open(ROOT / "assets" / "arthur_hawk.ico") as icon:
+            self.assertTrue(required_sizes.issubset(icon.ico.sizes()))
 
     def test_wake_word_runtime_is_collected_for_the_windows_installer(self) -> None:
         spec = (ROOT / "Arthur.spec").read_text(encoding="utf-8")

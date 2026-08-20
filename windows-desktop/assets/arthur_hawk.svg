@@ -1,21 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title">
-  <title>Arthur hawk mark</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Arthur professional hawk mark</title>
+  <desc id="description">A refined geometric hawk emblem on Arthur blue.</desc>
   <defs>
-    <linearGradient id="feather" x1="36" y1="30" x2="218" y2="230" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#55D9FF"/>
-      <stop offset=".52" stop-color="#2F6BFF"/>
-      <stop offset="1" stop-color="#9C5CFF"/>
+    <linearGradient id="metal" x1="118" y1="88" x2="403" y2="411" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D6F8FF"/>
+      <stop offset=".34" stop-color="#55D9FF"/>
+      <stop offset=".72" stop-color="#2F6BFF"/>
+      <stop offset="1" stop-color="#173E9A"/>
     </linearGradient>
-    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="5" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <linearGradient id="shadow" x1="175" y1="170" x2="370" y2="405" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#071A53"/>
+      <stop offset="1" stop-color="#020817"/>
+    </linearGradient>
+    <filter id="aura" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="7" result="soft"/>
+      <feMerge><feMergeNode in="soft"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect width="256" height="256" rx="58" fill="#083B8E"/>
-  <path d="M48 161c24-3 39-20 48-43 9-24 25-43 55-54-7 17-3 27 13 31 15 4 28 1 44-8-6 22-22 37-47 46 16 1 28 7 36 19-22 3-41 11-57 25-20 17-47 17-92-16Z" fill="url(#feather)" filter="url(#glow)"/>
-  <path d="M74 156c19-10 29-26 36-49 9-27 23-41 44-48-6 15-1 24 14 28" fill="none" stroke="#BFF5FF" stroke-width="7" stroke-linecap="round"/>
-  <path d="m176 113 27-15-10 28" fill="#FFC663"/>
-  <circle cx="161" cy="90" r="6" fill="#050B18" stroke="#55D9FF" stroke-width="3"/>
-  <path d="M46 188h164" stroke="#55D9FF" stroke-opacity=".42" stroke-width="3"/>
-  <path d="M65 204h126" stroke="#2F6BFF" stroke-opacity=".35" stroke-width="3"/>
+  <rect width="512" height="512" rx="112" fill="#083B8E"/>
+  <path d="M93 370 121 166l72 47 76-108 152 93-74 43 59 50-104 17 47 78-114-38-79 63-18-89-47 33Z" fill="#0A246B" opacity=".72"/>
+  <path d="M131 348c36-31 57-76 63-135 4-43 25-82 71-119 3 38 17 56 49 62 27 6 53-4 82-31-10 53-45 89-104 108 42 8 72 28 91 60-56 5-105 24-146 56-38 31-75 30-106-1Z" fill="url(#metal)" filter="url(#aura)"/>
+  <path d="M131 348c36-31 57-76 63-135 9-43 33-74 71-99-18 35-16 59 8 75-40 4-63 26-70 66-8 49-29 86-72 111Z" fill="#BFF7FF" opacity=".94"/>
+  <path d="M203 213c22-31 43-52 62-64-6 34 5 54 35 63-32 1-57 13-75 37-15 21-28 45-39 72 3-47 9-83 17-108Z" fill="#1866D9" opacity=".9"/>
+  <path d="M292 333c45-13 76-32 93-58-7 25-19 43-35 55l33 16c-40 5-73 17-100 35l9-48Z" fill="url(#shadow)"/>
+  <path d="m338 227 56-31-20 57-38 16Z" fill="#FFC663"/>
+  <path d="m326 211 29 11-25 14Z" fill="#050B18"/>
+  <circle cx="335" cy="224" r="6" fill="#55D9FF"/>
+  <path d="M132 394c61 20 150 20 245 0" fill="none" stroke="#55D9FF" stroke-opacity=".46" stroke-width="5" stroke-linecap="round"/>
+  <path d="M163 424c51 12 131 12 186 0" fill="none" stroke="#2F6BFF" stroke-opacity=".62" stroke-width="4" stroke-linecap="round"/>
 </svg>

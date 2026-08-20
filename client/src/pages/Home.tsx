@@ -65,7 +65,7 @@ const heroImage = "/manus-storage/arthur-hero-atmosphere_eca500cb.png";
 const analyticsImage = "/manus-storage/arthur-analytics-orbit_3b540420.png";
 const voiceImage = "/manus-storage/arthur-voice-signal_cd52a5c8.png";
 const markImage = "/manus-storage/arthur-mark_c216fbf0.png";
-const hawkMarkImage = "/manus-storage/arthur-hawk-icon_2f5afb70.png";
+const hawkMarkImage = "/manus-storage/arthur_hawk_1d8dd029.png";
 
 const providerCards: ProviderCard[] = [
   ["Main intelligence", "OpenAI", "Conversation, planning & tool selection", "openai-key"],

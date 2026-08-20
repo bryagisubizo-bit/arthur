@@ -341,3 +341,10 @@
 - [x] Add a user-approved short-summary workflow for credible public health articles, with visible source links and an emergency-symptom safety reminder.
 - [x] Restrict Spatial Workspace swipe, pinch, drag, and discard behaviour to that room so ordinary left/right/up/down scrolling remains conventional elsewhere.
 - [x] Add regression coverage, documentation, and release-ready source preparation for the health-information and navigation changes.
+
+## Professional Hawk Identity Refresh
+
+- [x] Replace the cartoon-style hawk artwork with a refined, professional blue-background hawk identity suitable for a Windows desktop application and installer.
+- [x] Generate and package multi-resolution PNG, ICO, and SVG assets while preserving the existing blue, cobalt, cyan, and amber design language.
+- [x] Apply the new hawk identity consistently in the desktop window, tray, executable, installer, and browser-preview branding.
+- [x] Add packaging checks and visual validation, then prepare the refreshed assets for the next authorized release.
