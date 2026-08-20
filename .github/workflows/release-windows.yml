@@ -1,0 +1,86 @@
+name: Release Arthur for Windows
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and release Arthur installer
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: windows-desktop
+
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Arthur build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller
+
+      - name: Run Arthur regression suite
+        run: |
+          Get-ChildItem test_*.py | ForEach-Object { python $_.FullName }
+
+      - name: Build Arthur with PyInstaller
+        run: python -m PyInstaller --noconfirm --clean Arthur.spec
+
+      - name: Install Inno Setup if needed
+        shell: pwsh
+        run: |
+          $compiler = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+          if (-not $compiler) {
+            choco install innosetup --no-progress -y
+          }
+          $compiler = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+          if (-not $compiler) {
+            $knownPaths = @(
+              "C:\Program Files (x86)\Inno Setup 7\ISCC.exe",
+              "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+              "C:\Program Files\Inno Setup 7\ISCC.exe",
+              "C:\Program Files\Inno Setup 6\ISCC.exe"
+            )
+            $compilerPath = $knownPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+          } else {
+            $compilerPath = $compiler.Source
+          }
+          if (-not $compilerPath) {
+            throw "Inno Setup compiler (ISCC.exe) is unavailable."
+          }
+          "ISCC_PATH=$compilerPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Compile versioned installer
+        id: installer
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          if ([string]::IsNullOrWhiteSpace($version)) { $version = "0.1.0" }
+          & $env:ISCC_PATH "/DMyAppVersion=$version" "installer\ArthurSetup.iss"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $installer = "installer\output\ArthurSetup-$version.exe"
+          if (-not (Test-Path $installer)) { throw "Expected installer was not created: $installer" }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "installer=$installer" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Publish installer release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v${{ steps.installer.outputs.version }}" }
+          gh release create $tag "${{ steps.installer.outputs.installer }}" --title "Arthur ${{ steps.installer.outputs.version }}" --notes "Windows installer release for Arthur. The desktop app performs a manual release check, then requires separate approval to download and hand off the verified installer to Windows."

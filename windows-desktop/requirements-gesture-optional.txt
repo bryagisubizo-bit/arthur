@@ -1,0 +1,4 @@
+# Optional local-only air-gesture adapter. Install only after the user approves camera-based gesture control.
+# These packages are not required for Arthur’s normal voice, touch, or Windows workflows.
+opencv-python>=4.10,<5
+mediapipe>=0.10.14,<0.11

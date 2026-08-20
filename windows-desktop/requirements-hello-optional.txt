@@ -1,0 +1,4 @@
+# Optional: enables OS-managed Windows Hello verification for Arthur's protected
+# Spatial workspace. Install only after reviewing the privacy notice in Arthur.
+# Arthur never receives or stores a face image or biometric template.
+winrt-Windows.Security.Credentials.UI>=3.2.1

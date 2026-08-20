@@ -1,0 +1,6 @@
+# Optional experimental local-camera face access for the protected Spatial room.
+# Arthur never installs these packages itself. The user reviews and runs the
+# command manually after choosing this access method.
+# This implementation is not equivalent to Windows Hello.
+opencv-contrib-python>=4.10
+cryptography>=42

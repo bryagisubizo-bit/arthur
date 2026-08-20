@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title>Arthur hawk mark</title>
+  <defs>
+    <linearGradient id="feather" x1="36" y1="30" x2="218" y2="230" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#55D9FF"/>
+      <stop offset=".52" stop-color="#2F6BFF"/>
+      <stop offset="1" stop-color="#9C5CFF"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="58" fill="#083B8E"/>
+  <path d="M48 161c24-3 39-20 48-43 9-24 25-43 55-54-7 17-3 27 13 31 15 4 28 1 44-8-6 22-22 37-47 46 16 1 28 7 36 19-22 3-41 11-57 25-20 17-47 17-92-16Z" fill="url(#feather)" filter="url(#glow)"/>
+  <path d="M74 156c19-10 29-26 36-49 9-27 23-41 44-48-6 15-1 24 14 28" fill="none" stroke="#BFF5FF" stroke-width="7" stroke-linecap="round"/>
+  <path d="m176 113 27-15-10 28" fill="#FFC663"/>
+  <circle cx="161" cy="90" r="6" fill="#050B18" stroke="#55D9FF" stroke-width="3"/>
+  <path d="M46 188h164" stroke="#55D9FF" stroke-opacity=".42" stroke-width="3"/>
+  <path d="M65 204h126" stroke="#2F6BFF" stroke-opacity=".35" stroke-width="3"/>
+</svg>

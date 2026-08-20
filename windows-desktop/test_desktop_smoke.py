@@ -1,0 +1,114 @@
+"""Lightweight desktop regression checks for the distributable Arthur prototype.
+
+Run with: python test_desktop_smoke.py
+The offscreen Qt platform keeps this usable in CI or during a build check.
+"""
+
+import json
+import os
+from datetime import datetime
+from pathlib import Path
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+source_path = Path(__file__).with_name("app.py")
+compile(source_path.read_text(encoding="utf-8"), str(source_path), "exec")
+
+from PySide6.QtWidgets import QApplication
+
+from app import DEFAULT_CONFIG, CommandPlanner, FirstRunTutorialDialog, MainWindow, PROVIDER_OPTIONS, is_time_in_window, render_greeting_script
+
+
+def main():
+    assert "appearance" in DEFAULT_CONFIG
+    assert "autonomy" in DEFAULT_CONFIG
+    assert DEFAULT_CONFIG["updates"]["manual_check_only"] is True
+    assert "Defensive security & compliance" in PROVIDER_OPTIONS
+    assert "URLScan.io" in PROVIDER_OPTIONS["Defensive security & compliance"]
+    assert "Have I Been Pwned" in PROVIDER_OPTIONS["Defensive security & compliance"]
+    assert "Philips Hue" in PROVIDER_OPTIONS["Smart Home"]
+    assert "MQTT" in PROVIDER_OPTIONS["Smart Home"]
+
+    allowed = CommandPlanner().plan("show my disk space")
+    blocked = CommandPlanner().plan("scan the network for targets")
+    assert allowed.allowed
+    assert not blocked.allowed
+
+    application = QApplication.instance() or QApplication([])
+    window = MainWindow()
+    assert window.nav_list.count() == 15
+    assert window.pages.count() == 15
+    assert window.nav_labels[0] == "Command desk"
+    assert window.nav_labels[2] == "Spatial workspace"
+    assert window.nav_labels[3] == "Symptom support"
+    assert window.nav_labels[6] == "Voice signal"
+    assert window.nav_labels[10] == "Language library"
+    assert window.nav_labels[11] == "API vault"
+    assert window.config["profile"]["active_conversation_language"] == "English"
+    assert window.language_library_page.catalogue_list.count() > 80
+    assert "Selected: English" in window.language_library_page.active_label.text()
+    assert window.language_library_page.save_colloquial_draft_button.text() == "Save private local draft"
+    assert window.language_library_page.import_identifier_table_button.text() == "Choose local ISO 639-3 table"
+    assert window.language_library_page.preview_colloquial_review_button.text() == "Prepare review preview"
+    assert window.language_library_page.preview_source_confirmation_button.text() == "Prepare source-confirmed preview"
+    assert window.language_library_page.source_evidence_kind.currentData() == "community-language-program"
+    assert "catalogue entries available" in window.language_library_page.import_identifier_status.text()
+    assert "not community reviewed" in window.language_library_page.colloquial_status.text()
+    assert "No bundled source-confirmed example" in window.language_library_page.source_confirmed_examples.text()
+    window.language_library_page.catalogue_search.setText("Navajo")
+    assert window.language_library_page.catalogue_list.count() == 1
+    assert "Diné Bizaad" in window.language_library_page.catalogue_list.item(0).text()
+    assert "No bundled source-confirmed example" in window.language_library_page.source_confirmed_examples.text()
+    assert "No research request prepared" in window.language_library_page.query_result.text()
+    assert window.config["security"]["defensive_lookup_enabled"] is False
+    assert window.config["interaction"]["spatial_room_access_method"] == ""
+    assert window.updates_page.manual_only.isChecked() is True
+    assert window.updates_page.manual_only.isEnabled() is False
+    assert window.voice_studio.listener is None
+    assert window.voice_studio.pitch.minimum() == -10
+    assert window.voice_studio.pitch.maximum() == 10
+    assert window.voice_studio.arrival_greeting.isChecked() is True
+    assert window.voice_studio.first_interaction_greeting.isChecked() is True
+    assert window.voice_studio.wake_greeting.isChecked() is True
+    assert "local desktop assistant" in window.voice_studio.introduction_text().lower()
+    assert window.voice_studio.introduction_test_button.text() == "Replay Arthur's introduction"
+    assert any(button.text() == "Test microphone activity (3 sec)" for button in window.voice_studio.findChildren(type(window.voice_studio.introduction_test_button)))
+    assert any(button.text() == "Check microphone readiness" for button in window.voice_studio.findChildren(type(window.voice_studio.introduction_test_button)))
+    assert any(button.text() == "Open Windows microphone privacy settings" for button in window.voice_studio.findChildren(type(window.voice_studio.introduction_test_button)))
+    assert window.voice_studio.microphone.count() >= 1
+    assert window.voice_studio.greeting_script_kind.currentData() == "opening"
+    assert window.voice_studio.greeting_script.toPlainText()
+    assert window.voice_studio.time_of_day_greetings.isChecked() is False
+    assert window.voice_studio.do_not_disturb.isChecked() is False
+    assert "Do Not Disturb is off" in window.voice_studio.quiet_hours_status.text()
+    assert is_time_in_window("23:00", "22:00", "07:00") is True
+    assert is_time_in_window("12:00", "22:00", "07:00") is False
+    custom = json.loads(json.dumps(DEFAULT_CONFIG))
+    custom["profile"]["display_name"] = "Aline"
+    custom["profile"]["title"] = "Madam"
+    custom["voice"]["time_of_day_greetings_enabled"] = True
+    assert render_greeting_script(custom, "opening", datetime(2026, 1, 1, 9, 0)) == "Good morning, Madam Aline. Arthur is ready when you are."
+    assert "Visual results remain gated" in window.dashboard.focus_cue.text()
+    assert window.voice_studio.pause_listener(persist=False) is False
+    assert window.spatial_page.air_gestures.isChecked() is False
+    assert window.spatial_page.hello_setup_button.text() == "Open Windows Hello sign-in settings"
+    assert window.spatial_page.face_test_button.text() == "Run visible local camera readiness test"
+    assert window.spatial_page.face_audio_cue.isChecked() is False
+    assert window.spatial_page.face_lockout_timer.isActive() is True
+    assert "no recent local face-check failures" in window.spatial_page.face_lockout_label.text().lower()
+    assert "choose exactly one method" in window.spatial_page.hello_privacy_note.text().lower()
+    assert "starts only after separate consent and enrolment" in window.spatial_page.hello_privacy_note.text().lower()
+    assert "stores no raw image or video" in window.spatial_page.hello_privacy_note.text().lower()
+    assert "short local cooldown" in window.spatial_page.hello_privacy_note.text().lower()
+    assert "choose one access method" in window.spatial_page.access_status.text().lower()
+    assert "not label a disease" in window.symptom_support_page.result.text().lower()
+    tutorial = FirstRunTutorialDialog(window)
+    assert tutorial.windowTitle() == "Arthur — first-run tutorial"
+    tutorial.close()
+    window.close()
+    application.processEvents()
+    print("Arthur desktop smoke checks passed.")
+
+
+if __name__ == "__main__":
+    main()

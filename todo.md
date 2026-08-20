@@ -303,3 +303,10 @@
 - [x] Persist installer choices only as initial local defaults, never as a grant of Windows microphone, camera, or background-execution permission.
 - [x] Replace the application and installer icon with the requested hawk on a blue background.
 - [x] Add regression coverage, documentation, a credential-free Windows handoff, checkpoint, and delivery.
+
+## Spatial Protection Installer Setup & GitHub Release
+
+- [x] Require the installer user to select one Spatial Room protection method—local password, OS-managed Windows Hello, or local camera face access—before completing setup.
+- [x] Store the selected method only as the initial Spatial Room access configuration; retain no biometric data and do not grant Windows permissions.
+- [x] Validate installer and update metadata, then prepare credential-free release assets for the existing GitHub update workflow.
+- [ ] Publish the approved GitHub release and report how Arthur identifies the update.
