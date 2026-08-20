@@ -21,3 +21,4 @@ After selecting the route, open **Voice Studio** and complete these independent 
 4. Ensure the selected speech-recognition route is actually ready. Wake-word detection by itself acknowledges “Arthur”; it does **not** transcribe the command that follows.
 
 > Arthur should only interpret a spoken command after the selected recognition route is ready and you have approved microphone listening. The app never silently enables background listening, engine/model installation, or provider connection.
+
