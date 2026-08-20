@@ -369,3 +369,16 @@
 - [x] Explain the selected route’s prerequisites and require separate approval before local engine/model installation, microphone listening, or provider connection.
 - [x] Apply the route choice to the browser preview and Windows Voice Studio, with regression coverage for selection, safe defaults, and unavailable states.
 - [x] Validate, synchronize, checkpoint, and document the spoken-command activation path without claiming command understanding before the selected route is ready.
+
+## Current Windows Build Handoff
+
+- [x] Verify the current Arthur desktop source contains all required PyInstaller, Inno Setup, dependency, and asset inputs for a local Windows build.
+- [x] Prepare a credential-free source archive and clear, current build instructions for PyInstaller followed by Inno Setup.
+- [x] Inspect the delivered archive for required files and secret-like material, then provide the build handoff to the user.
+
+## Desktop API Vault & Personal Protocol Parity
+
+- [x] Compare the Windows desktop API Vault and Personal Protocol with their Manus preview counterparts, including provider state, local key handling, profile language, and voice-route preferences.
+- [x] Close any material visible parity gaps while keeping API keys in local OS credential storage and personal preferences on the local profile only.
+- [x] Add or update regression coverage for the aligned desktop labels, saved-local status, and personal settings without hard-coding a user’s data.
+- [x] Validate the aligned build source, synchronize it into the release workspace, and include it in the credential-free PyInstaller/Inno Setup handoff.

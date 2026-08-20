@@ -46,7 +46,10 @@ def main():
     assert window.nav_labels[10] == "Language library"
     assert window.nav_labels[11] == "API vault"
     assert window.nav_labels[12] == "System sensors"
+    assert window.profile_page.heading.text() == "Personal Protocol"
     assert window.config["profile"]["active_conversation_language"] == ""
+    assert window.profile_page.speech_route.itemText(0) == SPEECH_RECOGNITION_ROUTE_PLACEHOLDER
+    assert window.profile_page.speech_route.currentData() == ""
     assert window.language_library_page.catalogue_list.count() > 80
     assert "Selected: " in window.language_library_page.active_label.text()
     assert window.language_library_page.save_colloquial_draft_button.text() == "Save private local draft"

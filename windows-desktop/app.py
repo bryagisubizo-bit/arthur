@@ -2999,21 +2999,32 @@ class ProfilePage(QWidget):
         self.config = config
         self.save_callback = save_callback
         layout = QVBoxLayout(self)
-        title = QLabel("User profile")
+        title = QLabel("Personal Protocol")
         title.setObjectName("pageTitle")
+        self.heading = title
         layout.addWidget(title)
+        local_only_note = QLabel(
+            "This profile is local to this Windows installation. Your API keys remain separately protected in Windows Credential Manager through API Vault. "
+            "Changing these preferences does not enable listening, install a model, or contact a provider."
+        )
+        local_only_note.setObjectName("muted")
+        local_only_note.setWordWrap(True)
+        layout.addWidget(local_only_note)
         form = QFormLayout()
         profile = config["profile"]
         self.name = QLineEdit(profile.get("display_name", ""))
         self.pronunciation = QLineEdit(profile.get("pronunciation", ""))
         self.native = QComboBox()
         configure_primary_language_combo(self.native, profile.get("native_language", ""))
+        self.speech_route = QComboBox()
+        configure_speech_recognition_route_combo(self.speech_route, profile.get("speech_recognition_route", ""))
         self.additional = QLineEdit(", ".join(profile.get("additional_languages", [])))
         self.wake = QLineEdit(profile.get("wake_word", "Arthur"))
         self.title_field = QLineEdit(profile.get("title", "Sir"))
         form.addRow("Name:", self.name)
         form.addRow("Pronunciation:", self.pronunciation)
         form.addRow("Primary system language (required):", self.native)
+        form.addRow("Speech recognition route (required):", self.speech_route)
         form.addRow("Additional languages:", self.additional)
         form.addRow("Wake word:", self.wake)
         form.addRow("Title:", self.title_field)
@@ -3028,17 +3039,22 @@ class ProfilePage(QWidget):
         if not primary_language:
             QMessageBox.warning(self, "Language required", "Choose the primary system language Arthur should use for typed and voice interactions.")
             return
+        speech_route = selected_speech_recognition_route(self.speech_route)
+        if not speech_route:
+            QMessageBox.warning(self, "Speech recognition route required", "Choose local/offline speech recognition or a developer-configured speech-to-text provider before saving this profile.")
+            return
         self.config["profile"].update({
             "display_name": self.name.text().strip(),
             "pronunciation": self.pronunciation.text().strip(),
             "native_language": primary_language,
             "active_conversation_language": primary_language,
+            "speech_recognition_route": speech_route,
             "additional_languages": [x.strip() for x in self.additional.text().split(",") if x.strip()],
             "wake_word": self.wake.text().strip() or "Arthur",
             "title": self.title_field.text().strip() or "Sir",
         })
         self.save_callback()
-        QMessageBox.information(self, "Profile saved", f"Arthur will use {primary_language} for typed and voice interactions. This does not enable microphone access.")
+        QMessageBox.information(self, "Personal Protocol saved", f"Arthur will use {primary_language} for typed and voice interactions with the selected speech-recognition route. This does not enable microphone access.")
 
 
 class ConductMemoryPage(QWidget):
