@@ -36,6 +36,14 @@ class InstallerConsentTests(unittest.TestCase):
         self.assertFalse(config["privacy"]["wake_word_background_enabled"])
         self.assertTrue(config["sensors"]["enabled"])
 
+    def test_spatial_password_choice_is_retained_as_first_run_setup_intent(self) -> None:
+        config = apply_installer_defaults(
+            {"voice": {}, "autonomy": {}, "privacy": {}, "integrations": {}, "sensors": {}, "interaction": {}},
+            {"spatial_room_protection": "password"},
+        )
+        self.assertEqual(config["interaction"]["installer_spatial_room_protection"], "password")
+        self.assertEqual(config["interaction"].get("spatial_room_access_method", ""), "")
+
 
 if __name__ == "__main__":
     unittest.main()

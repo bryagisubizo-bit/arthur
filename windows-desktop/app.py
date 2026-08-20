@@ -1422,21 +1422,31 @@ class SpatialWorkspacePage(QWidget):
         else:
             QMessageBox.warning(self, "Local camera readiness not confirmed", detail)
 
-    def configure_access(self):
+    def configure_access(self, preferred_method=None):
         if self.selected_access_method() and not self.session_unlocked:
             QMessageBox.information(self, "Unlock before changing access", "Verify the current room method before changing it. This prevents someone nearby from replacing your protected-room access method.")
             return
-        chooser = QMessageBox(self)
-        chooser.setWindowTitle("Choose Spatial-room access")
-        chooser.setText("Choose one access method. Arthur will never silently activate a camera or enrol a face.")
-        chooser.setInformativeText("Windows Hello is verified by Windows with face or PIN. Password access stores only a salted verifier in Windows Credential Manager.")
-        hello_button = chooser.addButton("Use Windows Hello only", QMessageBox.ButtonRole.ActionRole)
-        face_button = chooser.addButton("Use local camera face access", QMessageBox.ButtonRole.ActionRole)
-        password_button = chooser.addButton("Use local password only", QMessageBox.ButtonRole.ActionRole)
-        chooser.addButton(QMessageBox.StandardButton.Cancel)
-        chooser.exec()
+        choice = preferred_method if preferred_method in {"password", "windows_hello", "local_camera_face"} else ""
+        if not choice:
+            chooser = QMessageBox(self)
+            chooser.setWindowTitle("Choose Spatial-room access")
+            chooser.setText("Choose one access method. Arthur will never silently activate a camera or enrol a face.")
+            chooser.setInformativeText("Windows Hello is verified by Windows with face or PIN. Password access stores only a salted verifier in Windows Credential Manager.")
+            hello_button = chooser.addButton("Use Windows Hello only", QMessageBox.ButtonRole.ActionRole)
+            face_button = chooser.addButton("Use local camera face access", QMessageBox.ButtonRole.ActionRole)
+            password_button = chooser.addButton("Use local password only", QMessageBox.ButtonRole.ActionRole)
+            chooser.addButton(QMessageBox.StandardButton.Cancel)
+            chooser.exec()
+            if chooser.clickedButton() == hello_button:
+                choice = "windows_hello"
+            elif chooser.clickedButton() == face_button:
+                choice = "local_camera_face"
+            elif chooser.clickedButton() == password_button:
+                choice = "password"
+            else:
+                return
 
-        if chooser.clickedButton() == hello_button:
+        if choice == "windows_hello":
             hello_ok, detail = windows_hello_availability()
             if not hello_ok:
                 QMessageBox.warning(self, "Windows Hello is not ready", f"{detail}\n\nInstall the optional adapter, configure face or PIN in Windows Settings, then choose Windows Hello again.")
@@ -1453,7 +1463,7 @@ class SpatialWorkspacePage(QWidget):
             self.update_access_state()
             return
 
-        if chooser.clickedButton() == face_button:
+        if choice == "local_camera_face":
             face_ready, detail = face_dependency_status()
             if not face_ready:
                 QMessageBox.warning(self, "Local camera face adapter unavailable", f"{detail}\n\nArthur did not install anything. Use the copy button to review and run the optional local requirement yourself, then retry.")
@@ -1503,8 +1513,6 @@ class SpatialWorkspacePage(QWidget):
             self.update_access_state()
             return
 
-        if chooser.clickedButton() != password_button:
-            return
         dialog = SpatialPasswordSetupDialog(self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
@@ -1521,11 +1529,26 @@ class SpatialWorkspacePage(QWidget):
         self.save_callback()
         QMessageBox.information(self, "Password access selected", detail)
         self.update_access_state()
+        if preferred_method == "password":
+            self.unlock_room("Local password created and verified for this Arthur session.")
 
     def request_access(self):
         if self.session_unlocked:
             return True
         method = self.selected_access_method()
+        if not method:
+            installer_method = self.installer_selected_access_method()
+            if installer_method:
+                display_name = {
+                    "password": "local password",
+                    "windows_hello": "Windows Hello",
+                    "local_camera_face": "local camera face access",
+                }[installer_method]
+                QMessageBox.information(self, "Complete Spatial Room setup", f"During installation, you selected {display_name} for the protected Spatial Room. Arthur will now guide you through the required local setup. Nothing is enabled until you complete it.")
+                self.configure_access(preferred_method=installer_method)
+                return self.session_unlocked
+            QMessageBox.information(self, "Choose access first", "Choose local password, Windows Hello, or experimental local camera face access before opening this protected room.")
+            return False
         if method == "windows_hello":
             hello_ok, detail = windows_hello_availability()
             if not hello_ok:
@@ -1565,7 +1588,7 @@ class SpatialWorkspacePage(QWidget):
             self.unlock_room(detail)
             return True
         if method != "password" or not spatial_password_is_configured():
-            QMessageBox.information(self, "Choose access first", "Choose local password, Windows Hello, or experimental local camera face access before opening this protected room.")
+            QMessageBox.warning(self, "Password setup incomplete", "This room is marked for local password access, but no password verifier is stored. Choose room access method to create a new local password before opening the room.")
             return False
         dialog = SpatialPasswordDialog(self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
@@ -1604,6 +1627,12 @@ class SpatialWorkspacePage(QWidget):
             self.access_method_detail.setText("Experimental local camera face access only. A recovery secret can erase the encrypted local model; Arthur stores no raw camera image or video.")
         elif method == "password":
             self.access_method_detail.setText("Local password only. Windows Hello is not used for this room.")
+        elif self.installer_selected_access_method() == "password":
+            self.access_method_detail.setText("Local password was selected during installation but still needs to be created. Open the Spatial workspace to complete setup.")
+        elif self.installer_selected_access_method() == "windows_hello":
+            self.access_method_detail.setText("Windows Hello was selected during installation but still needs Windows verification. Open the Spatial workspace to complete setup.")
+        elif self.installer_selected_access_method() == "local_camera_face":
+            self.access_method_detail.setText("Local camera face access was selected during installation but still needs visible local enrolment. Open the Spatial workspace to complete setup.")
         else:
             self.access_method_detail.setText("No method selected. Choose local password, Windows Hello, or local camera face access.")
         self.face_recovery_button.setVisible(method == "local_camera_face")
@@ -1620,6 +1649,11 @@ class SpatialWorkspacePage(QWidget):
 
     def selected_access_method(self):
         method = self.config.get("interaction", {}).get("spatial_room_access_method", "")
+        return method if method in {"password", "windows_hello", "local_camera_face"} else ""
+
+    def installer_selected_access_method(self):
+        """Return only the local first-run protection intent written by the installer."""
+        method = self.config.get("interaction", {}).get("installer_spatial_room_protection", "")
         return method if method in {"password", "windows_hello", "local_camera_face"} else ""
 
     def recover_face_access(self):

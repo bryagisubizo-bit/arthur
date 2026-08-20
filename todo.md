@@ -328,3 +328,9 @@
 - [x] Provide a user-approved Windows PowerShell setup script and guide for installing openWakeWord dependencies and obtaining verified local models.
 - [x] Correct Arthur’s model selection and diagnostics so Windows-supported ONNX models are accepted alongside TFLite models where the local runtime supports them.
 - [ ] Add regression coverage and publish a corrected Windows installer release with updater-compatible SHA-256 metadata.
+
+## Spatial Room First-Time Setup Repair
+
+- [x] Fix the first-time Spatial Room password path so an installer-selected password method opens a password-creation prompt rather than only showing a locked-room notice.
+- [x] Add clear in-app guidance for unconfigured Windows Hello and local camera methods, without silently falling back or weakening protection.
+- [ ] Add regression coverage, synchronize the repair, and publish a verified installer update when GitHub write access is available.
