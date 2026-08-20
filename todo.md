@@ -392,3 +392,9 @@
 - [x] Ensure Arthur’s isolated Windows build environment installs Pillow before icon-packaging regressions import PIL.
 - [x] Update the PyInstaller/Inno Setup handoff guidance with the exact safe recovery and retry command for the reported missing-Pillow error.
 - [x] Validate the corrected dependency declaration and rebuild the credential-free handoff archive before providing the retry instructions.
+
+## System-Sensors Windows Regression Recovery
+
+- [x] Inspect the Windows system-sensors regression failure and confirm the expected contract for partial sensor availability.
+- [x] Correct the regression so valid available readings do not fail an unavailable-state test, while preserving clear unavailable behavior for unsupported sensors.
+- [x] Run the complete desktop build regression path, synchronize the repair, rebuild the credential-free handoff archive, and provide the user a safe retry command.

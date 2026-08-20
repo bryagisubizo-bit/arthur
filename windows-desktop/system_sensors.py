@@ -21,6 +21,7 @@ except ImportError:  # pragma: no cover - covered through dependency injection
 
 Reading = dict[str, str]
 Snapshot = dict[str, Reading]
+_DEFAULT_PSUTIL = object()
 
 
 def _unavailable(detail: str) -> Reading:
@@ -88,11 +89,15 @@ def _psutil_temperatures(module) -> list[tuple[str, float]]:
 
 def collect_snapshot(
     *,
-    psutil_module=None,
+    psutil_module=_DEFAULT_PSUTIL,
     thermal_reader: Callable[[], list[tuple[str, float]]] | None = None,
 ) -> Snapshot:
-    """Return a transient local status snapshot without storing or uploading it."""
-    module = imported_psutil if psutil_module is None else psutil_module
+    """Return a transient local status snapshot without storing or uploading it.
+
+    Omitting ``psutil_module`` uses the optional local dependency. Passing
+    ``None`` explicitly is reserved for deterministic unavailable-state checks.
+    """
+    module = imported_psutil if psutil_module is _DEFAULT_PSUTIL else psutil_module
     if module is None:
         unavailable = _unavailable("Arthur's optional local diagnostics dependency is unavailable.")
         return {key: dict(unavailable) for key in ("cpu", "memory", "storage", "battery", "network", "temperature", "gpu")}
