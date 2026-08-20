@@ -382,3 +382,7 @@
 - [x] Close any material visible parity gaps while keeping API keys in local OS credential storage and personal preferences on the local profile only.
 - [x] Add or update regression coverage for the aligned desktop labels, saved-local status, and personal settings without hard-coding a user’s data.
 - [x] Validate the aligned build source, synchronize it into the release workspace, and include it in the credential-free PyInstaller/Inno Setup handoff.
+
+## Build Archive Content Correction
+
+- [x] Rebuild the credential-free Windows handoff archive to include its documented PowerShell build script and BUILD_PYINSTALLER_INNO.md guide, then verify the exact archive paths and instructions match.

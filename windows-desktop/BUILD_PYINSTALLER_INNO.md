@@ -24,10 +24,10 @@ Install **Python 3.12** and **Inno Setup 6 or 7**. During Python installation, e
 The recommended one-command build is:
 
 ```powershell
-./build_windows.bat
+powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 ```
 
-The script creates or reuses `.venv`, installs `requirements.txt`, runs the desktop regression tests, uses `Arthur.spec` to build the executable with PyInstaller, and then calls Inno Setup if it finds `ISCC.exe`.
+The PowerShell entry point invokes the reviewed `build_windows.bat` workflow. It creates or reuses `.venv`, installs `requirements.txt`, runs the desktop regression tests, uses `Arthur.spec` to build the executable with PyInstaller, and then calls Inno Setup if it finds `ISCC.exe`.
 
 If PowerShell blocks the command, use:
 
