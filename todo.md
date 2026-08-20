@@ -321,4 +321,4 @@
 
 ## GitHub Repository Retargeting
 
-- [ ] Retarget Arthur’s manual updater defaults, Windows guidance, release workflow, and release publication from `bryagisubizo-bit/arthur-live-preview` to `bryagisubizo-bit/arthur`.
+- [x] Retarget Arthur’s manual updater defaults, Windows guidance, release workflow, and release publication from `bryagisubizo-bit/arthur-live-preview` to `bryagisubizo-bit/arthur`.
