@@ -334,3 +334,10 @@
 - [x] Fix the first-time Spatial Room password path so an installer-selected password method opens a password-creation prompt rather than only showing a locked-room notice.
 - [x] Add clear in-app guidance for unconfigured Windows Hello and local camera methods, without silently falling back or weakening protection.
 - [ ] Add regression coverage, synchronize the repair, and publish a verified installer update when GitHub write access is available.
+
+## Health Information & Room-Scoped Navigation
+
+- [x] Add a source-linked, plain-language health-information experience for recognised conditions that explicitly does not diagnose, triage, prescribe treatment, or replace a clinician.
+- [x] Add a user-approved short-summary workflow for credible public health articles, with visible source links and an emergency-symptom safety reminder.
+- [x] Restrict Spatial Workspace swipe, pinch, drag, and discard behaviour to that room so ordinary left/right/up/down scrolling remains conventional elsewhere.
+- [x] Add regression coverage, documentation, and release-ready source preparation for the health-information and navigation changes.

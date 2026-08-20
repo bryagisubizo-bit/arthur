@@ -15,6 +15,7 @@ source_path = Path(__file__).with_name("app.py")
 compile(source_path.read_text(encoding="utf-8"), str(source_path), "exec")
 
 from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import Qt
 
 from app import DEFAULT_CONFIG, CommandPlanner, FirstRunTutorialDialog, MainWindow, PROVIDER_OPTIONS, is_time_in_window, render_greeting_script
 
@@ -107,6 +108,10 @@ def main():
     assert "short local cooldown" in window.spatial_page.hello_privacy_note.text().lower()
     assert "choose one access method" in window.spatial_page.access_status.text().lower()
     assert "not label a disease" in window.symptom_support_page.result.text().lower()
+    assert window.symptom_support_page.condition_lookup_button.text() == "Find reviewed source"
+    assert window.symptom_support_page.article_summary_button.text() == "Create short local reading note"
+    assert "Opening any source link is your choice" in window.symptom_support_page.condition_reference.text()
+    assert window.page_scroll.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
     tutorial = FirstRunTutorialDialog(window)
     assert tutorial.windowTitle() == "Arthur — first-run tutorial"
     tutorial.close()

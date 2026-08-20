@@ -13,6 +13,7 @@ from command_planner import CommandPlanner, RiskLevel, language_switch_target
 from github_update import download_release_asset, fetch_latest_release, handoff_verified_installer, validate_repository
 from gesture_runtime import GestureEvent, GestureListener, optional_dependency_status
 from health_support import prepare_symptom_guidance
+from health_information import find_condition_reference, summarise_article_excerpt
 from language_library import (
     create_colloquial_draft,
     find_language,
@@ -1821,6 +1822,46 @@ class SymptomSupportPage(QWidget):
         self.result.setObjectName("muted")
         self.result.setWordWrap(True)
         layout.addWidget(self.result)
+
+        references = QGroupBox("Learn about a condition — source-linked, not a diagnosis")
+        reference_form = QVBoxLayout(references)
+        reference_prompt = QLabel("Enter the name of a condition you want to understand. Arthur will offer a reviewed public-health article; it will not infer a disease from your symptom note.")
+        reference_prompt.setWordWrap(True)
+        reference_form.addWidget(reference_prompt)
+        lookup_row = QHBoxLayout()
+        self.condition_query = QLineEdit()
+        self.condition_query.setPlaceholderText("For example: asthma, malaria, diabetes, or migraine")
+        self.condition_lookup_button = QPushButton("Find reviewed source")
+        self.condition_lookup_button.clicked.connect(self.find_condition_info)
+        lookup_row.addWidget(self.condition_query, 1)
+        lookup_row.addWidget(self.condition_lookup_button)
+        reference_form.addLayout(lookup_row)
+        self.condition_reference = QLabel("Arthur has not selected a condition article. Opening any source link is your choice.")
+        self.condition_reference.setObjectName("muted")
+        self.condition_reference.setWordWrap(True)
+        self.condition_reference.setTextFormat(Qt.TextFormat.RichText)
+        self.condition_reference.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+        self.condition_reference.setOpenExternalLinks(True)
+        reference_form.addWidget(self.condition_reference)
+
+        excerpt_prompt = QLabel("To get a short explanation, paste an article passage and its direct MedlinePlus, NHS, WHO, or CDC URL. Arthur summarizes only pasted text; it does not open, download, or send the article.")
+        excerpt_prompt.setWordWrap(True)
+        reference_form.addWidget(excerpt_prompt)
+        self.article_source_url = QLineEdit()
+        self.article_source_url.setPlaceholderText("https://medlineplus.gov/... or another supported public-health article URL")
+        reference_form.addWidget(self.article_source_url)
+        self.article_excerpt = QTextEdit()
+        self.article_excerpt.setPlaceholderText("Paste a paragraph from the source article here for a short local reading note.")
+        self.article_excerpt.setMinimumHeight(110)
+        reference_form.addWidget(self.article_excerpt)
+        self.article_summary_button = QPushButton("Create short local reading note")
+        self.article_summary_button.clicked.connect(self.create_article_note)
+        reference_form.addWidget(self.article_summary_button)
+        self.article_note = QLabel("No article text has been summarized. Arthur will keep the source link visible and will not diagnose or recommend treatment.")
+        self.article_note.setObjectName("muted")
+        self.article_note.setWordWrap(True)
+        reference_form.addWidget(self.article_note)
+        layout.addWidget(references)
         layout.addStretch()
 
     def prepare_guidance(self):
@@ -1834,6 +1875,26 @@ class SymptomSupportPage(QWidget):
     def speak_guidance(self):
         if self.current_guidance:
             self.voice_runtime.speak(f"{self.current_guidance.heading}. {self.current_guidance.next_step}")
+
+    def find_condition_info(self):
+        reference = find_condition_reference(self.condition_query.text())
+        if not reference.source_url:
+            self.condition_reference.setText(reference.notice)
+            return
+        self.condition_reference.setText(
+            f"<b>{reference.heading}</b> · {reference.source_name}<br>"
+            f"{reference.notice}<br>"
+            f"<a href=\"{reference.source_url}\">Open the reviewed source article</a>"
+        )
+
+    def create_article_note(self):
+        note = summarise_article_excerpt(self.article_source_url.text(), self.article_excerpt.toPlainText())
+        if not note.summary:
+            self.article_note.setText(note.notice)
+            return
+        self.article_note.setText(
+            f"<b>Short local reading note · {note.source_name}</b><br>{note.summary}<br><br>{note.notice}"
+        )
 
 
 class VoiceSignalPage(QWidget):
@@ -3602,11 +3663,15 @@ class MainWindow(QMainWindow):
         self.pages.addWidget(self.updates_page)
         self.profile_page = ProfilePage(self.config, self.save_all)
         self.pages.addWidget(self.profile_page)
-        page_scroll = QScrollArea()
-        page_scroll.setWidgetResizable(True)
-        page_scroll.setObjectName("workspaceScroll")
-        page_scroll.setWidget(self.pages)
-        content_layout.addWidget(page_scroll, 1)
+        self.page_scroll = QScrollArea()
+        self.page_scroll.setWidgetResizable(True)
+        # Only SpatialWorkspacePage owns horizontal swipe and pinch semantics.
+        # Other rooms retain conventional vertical scrolling and never expose a
+        # horizontal workspace scrollbar that could be mistaken for navigation.
+        self.page_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.page_scroll.setObjectName("workspaceScroll")
+        self.page_scroll.setWidget(self.pages)
+        content_layout.addWidget(self.page_scroll, 1)
         root.addWidget(content, 1)
         self.nav_list.setCurrentRow(0)
 
