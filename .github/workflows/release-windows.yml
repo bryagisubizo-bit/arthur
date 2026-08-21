@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Semantic version to release, for example 0.1.2"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -66,13 +71,20 @@ jobs:
       - name: Compile versioned installer
         id: installer
         shell: pwsh
+        env:
+          RELEASE_REF: ${{ inputs.release_version || github.ref_name }}
         run: |
-          $version = "${{ github.ref_name }}".TrimStart("v")
-          if ([string]::IsNullOrWhiteSpace($version)) { $version = "0.1.0" }
+          $tag = "$env:RELEASE_REF".Trim()
+          if ($tag -notmatch '^v?\d+\.\d+\.\d+$') {
+            throw "Release version must use semantic versioning, for example v0.1.2 or 0.1.2."
+          }
+          if (-not $tag.StartsWith("v")) { $tag = "v$tag" }
+          $version = $tag.TrimStart("v")
           & $env:ISCC_PATH "/DMyAppVersion=$version" "installer\ArthurSetup.iss"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $installer = "installer\output\ArthurSetup-$version.exe"
           if (-not (Test-Path $installer)) { throw "Expected installer was not created: $installer" }
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "installer=$installer" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
@@ -81,6 +93,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
-          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v${{ steps.installer.outputs.version }}" }
-          gh release create $tag "${{ steps.installer.outputs.installer }}" --title "Arthur ${{ steps.installer.outputs.version }}" --notes "Windows installer release for Arthur. The desktop app performs a manual release check, then requires separate approval to download and hand off the verified installer to Windows."
+          $tag = "${{ steps.installer.outputs.tag }}"
+          gh release create $tag "${{ steps.installer.outputs.installer }}" --target "${{ github.sha }}" --title "Arthur ${{ steps.installer.outputs.version }}" --notes "Windows installer release for Arthur. The desktop app performs a manual release check, then requires separate approval to download and hand off the verified installer to Windows."
