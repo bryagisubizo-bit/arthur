@@ -434,4 +434,4 @@
 - [x] Define a local Windows accessibility-bridge contract that discovers only user-approved application windows and accessible controls, with no screen recording, password-field reading, security-prompt bypass, or background capture.
 - [x] Add application-selection, scoped inspection, navigation-plan preview, approval, execution-readiness, emergency-stop, and activity-record controls in the desktop and browser Spatial Workspace.
 - [x] Enforce per-app user approval and separate confirmation for click, typing, clipboard, file-selection, communication, and any data sharing; actions remain unexecuted until their explicit approval.
-- [ ] Add regression coverage, credentials/privacy documentation, synchronized release workspace source, and publish the verified next Windows installer release.
+- [x] Add regression coverage, credentials/privacy documentation, synchronized release workspace source, and publish the verified next Windows installer release.
