@@ -6,6 +6,7 @@ import { prepareSymptomGuidance, type SymptomGuidance } from "@/lib/symptomSuppo
 import SpatialContextGraph from "@/components/SpatialContextGraph";
 import MultimodalReadinessPanel from "@/components/MultimodalReadinessPanel";
 import CloudGatewayPanel from "@/components/CloudGatewayPanel";
+import ApplicationBridgePanel from "@/components/ApplicationBridgePanel";
 import {
   createInitialSpatialWorkspace,
   coordinateForSpatialModule,
@@ -278,6 +279,7 @@ export default function ToolsPanel({ focusSpatial = false }: { focusSpatial?: bo
       </section>
 
       <MultimodalReadinessPanel />
+      <ApplicationBridgePanel privacyLocked={privacyMode} />
       <CloudGatewayPanel privacyLocked={privacyMode} />
 
       {!focusSpatial && <>

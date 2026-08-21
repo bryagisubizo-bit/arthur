@@ -144,6 +144,11 @@ def main():
     assert "closed" in window.spatial_page.cloud_gateway_status_label.text().lower()
     assert "no background polling or streaming" in window.spatial_page.cloud_gateway_resource_label.text().lower()
     assert window.spatial_page.cloud_gateway_review_button.text() == "Review cloud connection requirements"
+    assert "application bridge" in window.spatial_page.app_bridge_status_label.parentWidget().title().lower()
+    assert "has not enumerated applications" in window.spatial_page.app_bridge_status_label.text().lower()
+    assert window.spatial_page.app_bridge_approve_button.isEnabled() is False
+    assert window.spatial_page.app_bridge_plan_button.isEnabled() is False
+    assert window.spatial_page.app_bridge_stop_button.text() == "Emergency stop & clear"
     assert "choose exactly one method" in window.spatial_page.hello_privacy_note.text().lower()
     assert "starts only after separate consent and enrolment" in window.spatial_page.hello_privacy_note.text().lower()
     assert "stores no raw image or video" in window.spatial_page.hello_privacy_note.text().lower()

@@ -1,0 +1,3 @@
+# Install manually only after reviewing the Application Bridge guide.
+# The foundation release does not import or start this adapter automatically.
+pywinauto>=0.6.8

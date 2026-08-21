@@ -46,6 +46,7 @@ from spatial_access import clear_password as clear_spatial_password, has_passwor
 from coordinate_layout import coordinate_snapshot, zone_members
 from monitor_workspace import apply_approved_placement, discover_monitors, placement_preview, pywin32_mover, resource_budget
 from cloud_gateway import gateway_status as cloud_gateway_status, review_text as cloud_gateway_review_text
+from application_bridge import action_readiness as app_bridge_action_readiness, approve_scope as approve_app_scope, bridge_status as app_bridge_status, create_scope as create_app_scope, emergency_stop as app_bridge_emergency_stop, optional_dependency_status as app_bridge_dependency_status, prepare_navigation_plan as prepare_app_navigation_plan
 from voice_runtime import VoiceRuntime, available_input_devices, diagnose_wake_word, microphone_readiness, test_microphone_activity
 from voice_synthesis import ROUTES as VOICE_SYNTHESIS_ROUTES, describe_route as describe_synthesis_route
 from windows_hello import availability as windows_hello_availability, verify as verify_windows_hello
@@ -1556,6 +1557,38 @@ class SpatialWorkspacePage(QWidget):
         monitor_layout.addRow("Resource guard:", self.monitor_resource_label)
         layout.addWidget(monitors)
 
+        app_bridge = QGroupBox("Windows application bridge — review only")
+        app_bridge_layout = QFormLayout(app_bridge)
+        self.app_bridge_scope = None
+        self.app_bridge_status_label = QLabel(app_bridge_status())
+        self.app_bridge_status_label.setObjectName("safetyBoundary")
+        self.app_bridge_status_label.setWordWrap(True)
+        adapter_available, adapter_detail = app_bridge_dependency_status()
+        self.app_bridge_adapter_label = QLabel(adapter_detail)
+        self.app_bridge_adapter_label.setObjectName("muted")
+        self.app_bridge_adapter_label.setWordWrap(True)
+        self.app_bridge_scope_button = QPushButton("Choose one application scope")
+        self.app_bridge_scope_button.setObjectName("secondaryButton")
+        self.app_bridge_scope_button.clicked.connect(self.prepare_app_bridge_scope)
+        self.app_bridge_approve_button = QPushButton("Approve selected app review")
+        self.app_bridge_approve_button.setObjectName("secondaryButton")
+        self.app_bridge_approve_button.setEnabled(False)
+        self.app_bridge_approve_button.clicked.connect(self.approve_app_bridge_scope)
+        self.app_bridge_plan_button = QPushButton("Prepare navigation plan")
+        self.app_bridge_plan_button.setObjectName("secondaryButton")
+        self.app_bridge_plan_button.setEnabled(False)
+        self.app_bridge_plan_button.clicked.connect(self.prepare_app_bridge_plan)
+        self.app_bridge_stop_button = QPushButton("Emergency stop & clear")
+        self.app_bridge_stop_button.setObjectName("secondaryButton")
+        self.app_bridge_stop_button.clicked.connect(self.stop_app_bridge)
+        app_bridge_layout.addRow("Bridge state:", self.app_bridge_status_label)
+        app_bridge_layout.addRow("Optional adapter:", self.app_bridge_adapter_label)
+        app_bridge_layout.addRow("Scope:", self.app_bridge_scope_button)
+        app_bridge_layout.addRow("Approval:", self.app_bridge_approve_button)
+        app_bridge_layout.addRow("Plan:", self.app_bridge_plan_button)
+        app_bridge_layout.addRow("Stop:", self.app_bridge_stop_button)
+        layout.addWidget(app_bridge)
+
         cloud_gateway = QGroupBox("Cloud-assisted operating model — review only")
         cloud_layout = QFormLayout(cloud_gateway)
         self.cloud_gateway_status_label = QLabel(cloud_gateway_status(config))
@@ -1969,6 +2002,53 @@ class SpatialWorkspacePage(QWidget):
     def review_cloud_gateway_requirements(self):
         """Describe a future cloud connection without reading secrets or opening a route."""
         QMessageBox.information(self, "Cloud-assisted review", cloud_gateway_review_text())
+
+    def prepare_app_bridge_scope(self):
+        """Accept one manually named window title without enumerating desktop applications."""
+        if not self.session_unlocked:
+            QMessageBox.warning(self, "Unlock required", "Unlock the protected Spatial room before preparing a local application review scope. Arthur has not inspected any application.")
+            return
+        title, accepted = QInputDialog.getText(self, "Choose application review scope", "Enter the visible title of one application window:")
+        if not accepted:
+            return
+        try:
+            self.app_bridge_scope = create_app_scope(title)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Application scope unavailable", str(exc))
+            return
+        self.app_bridge_status_label.setText(app_bridge_status(self.app_bridge_scope))
+        self.app_bridge_approve_button.setEnabled(True)
+        self.app_bridge_plan_button.setEnabled(False)
+
+    def approve_app_bridge_scope(self):
+        """Require a specific consent before a named app can receive a navigation-plan review."""
+        if not self.app_bridge_scope:
+            return
+        answer = QMessageBox.question(
+            self,
+            "Approve one application review?",
+            f"Allow Arthur to prepare an accessibility navigation plan for only {self.app_bridge_scope.title!r}?\n\n"
+            "This does not enumerate apps, read content, open a screen capture, click, type, access clipboard, select files, send messages, or bypass security prompts. Those actions require separate execution-time confirmation.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        self.app_bridge_scope = approve_app_scope(self.app_bridge_scope, answer == QMessageBox.StandardButton.Yes)
+        self.app_bridge_status_label.setText(app_bridge_status(self.app_bridge_scope))
+        self.app_bridge_plan_button.setEnabled(self.app_bridge_scope.approved)
+
+    def prepare_app_bridge_plan(self):
+        """Show a plan-only next step; this release does not start a UI Automation client."""
+        plan = prepare_app_navigation_plan(self.app_bridge_scope, "review visible interface and propose the next navigation step")
+        readiness = app_bridge_action_readiness(self.app_bridge_scope, "inspect_accessible_controls")
+        self.app_bridge_status_label.setText(f"{plan['detail']} {readiness['detail']}")
+
+    def stop_app_bridge(self):
+        """Clear all in-memory application scope and ensure the bridge returns to a fail-closed state."""
+        result = app_bridge_emergency_stop()
+        self.app_bridge_scope = None
+        self.app_bridge_status_label.setText(result["detail"])
+        self.app_bridge_approve_button.setEnabled(False)
+        self.app_bridge_plan_button.setEnabled(False)
 
     def refresh_monitor_map(self):
         """Read display rectangles once on an explicit button click; never capture pixels or open a continuous watcher."""
