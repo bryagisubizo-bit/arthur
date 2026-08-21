@@ -1441,6 +1441,7 @@ class SpatialWorkspacePage(QWidget):
         self.card_list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         self.card_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.card_list.addItems(["Research field", "System diagnostics", "Private note", "Voice signal", "Smart-home review"])
+        self.card_list.setCurrentRow(0)
         controls_layout.addRow("Touch & drag cards:", self.card_list)
         action_row = QHBoxLayout()
         self.previous_card = QPushButton("← Previous")
@@ -1459,6 +1460,27 @@ class SpatialWorkspacePage(QWidget):
         controls_layout.addRow("Reviewed card action:", action_holder)
         layout.addWidget(controls)
         self.touch_controls = controls
+
+        # The context map is deliberately a local UI projection. It describes only
+        # Arthur's visible workspace modules; it opens no WebSocket, device, or provider.
+        context_map = QGroupBox("Contextual module map")
+        context_layout = QFormLayout(context_map)
+        self.context_revision = 0
+        self.context_focus_label = QLabel()
+        self.context_focus_label.setWordWrap(True)
+        self.context_nodes_label = QLabel()
+        self.context_nodes_label.setObjectName("muted")
+        self.context_nodes_label.setWordWrap(True)
+        self.context_sync_status = QLabel("No transport is open. Layout changes remain in this Arthur session only.")
+        self.context_sync_status.setObjectName("safetyBoundary")
+        self.context_sync_status.setWordWrap(True)
+        context_layout.addRow("Focused module:", self.context_focus_label)
+        context_layout.addRow("Visible modules:", self.context_nodes_label)
+        context_layout.addRow("Synchronization:", self.context_sync_status)
+        layout.addWidget(context_map)
+        self.card_list.currentTextChanged.connect(lambda _label: self.update_context_map("module.focus"))
+        self.card_list.model().rowsMoved.connect(lambda *_args: self.update_context_map("module.move"))
+        self.update_context_map("initial")
 
         air = QGroupBox("Optional local air gestures")
         air_layout = QFormLayout(air)
@@ -1813,6 +1835,17 @@ class SpatialWorkspacePage(QWidget):
         self.card_list.setFont(font)
         self.gesture_status_label.setText(f"Canvas scale is {value}%. Pinch gestures and the slider affect only this workspace.")
 
+    def update_context_map(self, event="module.focus"):
+        """Render a local, reviewable map without treating visual state as device consent."""
+        labels = [self.card_list.item(index).text() for index in range(self.card_list.count())]
+        selected = self.card_list.currentItem().text() if self.card_list.currentItem() else "No module selected"
+        if event != "initial":
+            self.context_revision += 1
+        self.context_focus_label.setText(f"{selected} · revision {self.context_revision}")
+        self.context_nodes_label.setText("  →  ".join(labels) if labels else "No visible modules. Restore a discarded card to rebuild this local layout.")
+        access = "Session access verified" if self.session_unlocked else "Room access required"
+        self.context_sync_status.setText(f"No transport is open. Last local layout event: {event}. {access}. Camera, microphone, provider, and network connections remain off.")
+
     def move_selection(self, delta):
         if not self.session_unlocked:
             return
@@ -1837,6 +1870,7 @@ class SpatialWorkspacePage(QWidget):
             self.last_removed = (current, self.card_list.takeItem(current).text())
             self.undo_discard.setEnabled(True)
             self.gesture_status_label.setText("Card removed from the current Arthur workspace. Undo remains available.")
+            self.update_context_map("module.discard")
 
     def undo_last_discard(self):
         if not self.last_removed:
@@ -1847,6 +1881,7 @@ class SpatialWorkspacePage(QWidget):
         self.last_removed = None
         self.undo_discard.setEnabled(False)
         self.gesture_status_label.setText("The discarded Arthur card was restored.")
+        self.update_context_map("module.restore")
 
     def toggle_air_gestures(self):
         if not self.session_unlocked:

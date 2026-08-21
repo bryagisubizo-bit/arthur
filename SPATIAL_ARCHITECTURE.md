@@ -72,14 +72,14 @@ Every visual change will be modeled as a small, versioned workspace event rather
 type SpatialWorkspaceEvent = {
   id: string;
   revision: number;
-  actor: "local-user" | "arthur";
-  kind: "module.move" | "module.pin" | "module.discard" | "graph.focus";
-  moduleId?: string;
+  actor: "local-user";
+  kind: "module.focus" | "module.move" | "module.discard" | "module.restore";
+  moduleId: string;
   at: number;
 };
 ```
 
-The next implementation will accept only locally initiated workspace events. A later agent connector must expose a typed, permission-checked tool manifest and may never interpret a visual event as permission to access the microphone, camera, files, or another application. The Model Context Protocol is a suitable future reference for that boundary: its current specification describes JSON-RPC capability negotiation between host applications, connectors, and capability servers, and explicitly calls for user consent before data sharing or tool invocation.[3]
+The implementation accepts only locally initiated workspace events. A later agent connector must expose a typed, permission-checked tool manifest and may never interpret a visual event as permission to access the microphone, camera, files, or another application. The Model Context Protocol is a suitable future reference for that boundary: its current specification describes JSON-RPC capability negotiation between host applications, connectors, and capability servers, and explicitly calls for user consent before data sharing or tool invocation.[3]
 
 ## References
 

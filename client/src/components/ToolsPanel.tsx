@@ -3,6 +3,16 @@
  */
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { prepareSymptomGuidance, type SymptomGuidance } from "@/lib/symptomSupport";
+import SpatialContextGraph from "@/components/SpatialContextGraph";
+import {
+  createInitialSpatialWorkspace,
+  discardSpatialModule,
+  focusSpatialModule,
+  focusedSpatialModule,
+  moveSpatialFocus,
+  reorderSpatialModule,
+  restoreSpatialModule,
+} from "@/lib/spatialWorkspace";
 import {
   AppWindow,
   Camera,
@@ -85,9 +95,7 @@ export default function ToolsPanel({ focusSpatial = false }: { focusSpatial?: bo
   const [history, setHistory] = useState(initialHistory);
   const [smartHomeProvider, setSmartHomeProvider] = useState("Home Assistant");
   const [discoveryReviewEnabled, setDiscoveryReviewEnabled] = useState(false);
-  const [spatialCards, setSpatialCards] = useState(["Research field", "System diagnostics", "Private note", "Voice signal", "Smart-home review"]);
-  const [selectedSpatialCard, setSelectedSpatialCard] = useState("Research field");
-  const [lastDiscardedCard, setLastDiscardedCard] = useState<{ label: string; index: number } | null>(null);
+  const [spatialWorkspace, setSpatialWorkspace] = useState(createInitialSpatialWorkspace);
   const [spatialZoom, setSpatialZoom] = useState(100);
   const [gestureConsent, setGestureConsent] = useState(false);
   const [spatialPasswordReady, setSpatialPasswordReady] = useState(false);
@@ -104,6 +112,7 @@ export default function ToolsPanel({ focusSpatial = false }: { focusSpatial?: bo
   const touchOrigin = useRef<{ x: number; y: number } | null>(null);
   const spatialWorkspaceRef = useRef<HTMLElement | null>(null);
   const active = routeModes.find((item) => item.name === activeRoute) ?? routeModes[0];
+  const selectedSpatialCard = focusedSpatialModule(spatialWorkspace);
 
   useEffect(() => {
     if (!faceCooldownSeconds) return;
@@ -132,42 +141,25 @@ export default function ToolsPanel({ focusSpatial = false }: { focusSpatial?: bo
   };
 
   const moveSelection = (direction: number) => {
-    if (!spatialCards.length) return;
-    const index = Math.max(0, spatialCards.indexOf(selectedSpatialCard));
-    const next = spatialCards[(index + direction + spatialCards.length) % spatialCards.length];
-    setSelectedSpatialCard(next);
+    setSpatialWorkspace((current) => moveSpatialFocus(current, direction));
   };
 
   const discardSelectedSpatialCard = () => {
-    const index = spatialCards.indexOf(selectedSpatialCard);
-    if (index < 0) return toast.error("Select an Arthur workspace card first.");
-    const label = spatialCards[index];
-    setLastDiscardedCard({ label, index });
-    const remaining = spatialCards.filter((item) => item !== label);
-    setSpatialCards(remaining);
-    setSelectedSpatialCard(remaining[Math.min(index, Math.max(remaining.length - 1, 0))] ?? "");
+    if (!selectedSpatialCard) return toast.error("Select an Arthur workspace card first.");
+    setSpatialWorkspace((current) => discardSpatialModule(current, selectedSpatialCard.id));
     toast("Card removed from the current preview layout.", { description: "It was not deleted and can be restored with Undo discard." });
   };
 
   const restoreDiscardedSpatialCard = () => {
-    if (!lastDiscardedCard) return;
-    setSpatialCards((current) => [...current.slice(0, lastDiscardedCard.index), lastDiscardedCard.label, ...current.slice(lastDiscardedCard.index)]);
-    setSelectedSpatialCard(lastDiscardedCard.label);
-    setLastDiscardedCard(null);
+    if (!spatialWorkspace.discarded) return;
+    setSpatialWorkspace((current) => restoreSpatialModule(current));
     toast("Workspace card restored.");
   };
 
-  const reorderSpatialCard = (target: string) => {
+  const reorderSpatialCard = (targetId: string) => {
     const source = dragCard.current;
-    if (!source || source === target) return;
-    setSpatialCards((current) => {
-      const from = current.indexOf(source);
-      const to = current.indexOf(target);
-      const next = [...current];
-      next.splice(from, 1);
-      next.splice(to, 0, source);
-      return next;
-    });
+    if (!source || source === targetId) return;
+    setSpatialWorkspace((current) => reorderSpatialModule(current, source, targetId));
     dragCard.current = null;
   };
 
@@ -271,10 +263,11 @@ export default function ToolsPanel({ focusSpatial = false }: { focusSpatial?: bo
           </div>
         </div>
         <div className="spatial-canvas" aria-disabled={!spatialUnlocked} style={{ "--spatial-scale": spatialZoom / 100 } as CSSProperties} onTouchStart={(event) => { if (!spatialUnlocked) return; const touch = event.touches[0]; touchOrigin.current = touch ? { x: touch.clientX, y: touch.clientY } : null; }} onTouchEnd={(event) => { if (!spatialUnlocked) return; const origin = touchOrigin.current; const touch = event.changedTouches[0]; if (origin && touch && Math.abs(touch.clientX - origin.x) > 56) { moveSelection(touch.clientX > origin.x ? -1 : 1); toast("Touch swipe selected a neighbouring Arthur workspace card."); } touchOrigin.current = null; }} onWheel={(event) => { if (spatialUnlocked && event.ctrlKey) { event.preventDefault(); setSpatialZoom((current) => Math.min(150, Math.max(70, current + (event.deltaY < 0 ? 5 : -5)))); } }}>
-          <div className="spatial-canvas-meta"><span><MoveHorizontal size={15} /> {selectedSpatialCard || "No card selected"}</span><span>{spatialZoom}% canvas</span></div>
-          <div className="spatial-card-strip" aria-label="Touch-reorderable Arthur workspace cards">{spatialCards.map((card) => <button key={card} disabled={!spatialUnlocked} draggable={spatialUnlocked} onDragStart={() => { dragCard.current = card; }} onDragOver={(event) => { if (spatialUnlocked) event.preventDefault(); }} onDrop={() => reorderSpatialCard(card)} onClick={() => setSelectedSpatialCard(card)} className={`spatial-card ${selectedSpatialCard === card ? "active" : ""}`} aria-pressed={selectedSpatialCard === card}><span>{String(spatialCards.indexOf(card) + 1).padStart(2, "0")}</span><b>{card}</b></button>)}</div>
+          <div className="spatial-canvas-meta"><span><MoveHorizontal size={15} /> {selectedSpatialCard?.label ?? "No card selected"}</span><span>{spatialZoom}% canvas</span></div>
+          <div className="spatial-card-strip" aria-label="Touch-reorderable Arthur workspace cards">{spatialWorkspace.modules.map((card, index) => <button key={card.id} disabled={!spatialUnlocked} draggable={spatialUnlocked} onDragStart={() => { dragCard.current = card.id; }} onDragOver={(event) => { if (spatialUnlocked) event.preventDefault(); }} onDrop={() => reorderSpatialCard(card.id)} onClick={() => setSpatialWorkspace((current) => focusSpatialModule(current, card.id))} className={`spatial-card ${selectedSpatialCard?.id === card.id ? "active" : ""}`} aria-pressed={selectedSpatialCard?.id === card.id}><span>{String(index + 1).padStart(2, "0")}</span><b>{card.label}</b></button>)}</div>
         </div>
-        <div className="spatial-controls"><button className="outline-button" disabled={!spatialUnlocked} onClick={() => moveSelection(-1)}>Previous card</button><button className="outline-button" disabled={!spatialUnlocked} onClick={() => moveSelection(1)}>Next card</button><label>Zoom<input disabled={!spatialUnlocked} type="range" min="70" max="150" value={spatialZoom} onChange={(event) => setSpatialZoom(Number(event.target.value))} /></label><button className="outline-button" disabled={!spatialUnlocked || !selectedSpatialCard} onClick={discardSelectedSpatialCard}><Trash2 size={15} /> Discard selected</button><button className="text-button" disabled={!spatialUnlocked || !lastDiscardedCard} onClick={restoreDiscardedSpatialCard}>Undo discard</button></div>
+        <SpatialContextGraph modules={spatialWorkspace.modules} focusedId={spatialWorkspace.focusedId} revision={spatialWorkspace.revision} lastEvent={spatialWorkspace.lastEvent} unlocked={spatialUnlocked} />
+        <div className="spatial-controls"><button className="outline-button" disabled={!spatialUnlocked} onClick={() => moveSelection(-1)}>Previous card</button><button className="outline-button" disabled={!spatialUnlocked} onClick={() => moveSelection(1)}>Next card</button><label>Zoom<input disabled={!spatialUnlocked} type="range" min="70" max="150" value={spatialZoom} onChange={(event) => setSpatialZoom(Number(event.target.value))} /></label><button className="outline-button" disabled={!spatialUnlocked || !selectedSpatialCard} onClick={discardSelectedSpatialCard}><Trash2 size={15} /> Discard selected</button><button className="text-button" disabled={!spatialUnlocked || !spatialWorkspace.discarded} onClick={restoreDiscardedSpatialCard}>Undo discard</button></div>
         <div className="gesture-consent-callout"><Hand size={18} /><div><b>Camera-based air gestures are optional and off.</b><p>Enable only in the Windows prototype after manually installing the optional requirements, selecting a local camera, unlocking this room, and accepting the visible local-only camera indicator. The preview neither opens a camera nor reads video.</p></div><label className="review-choice"><input disabled={!spatialUnlocked} type="checkbox" checked={gestureConsent} onChange={(event) => setGestureConsent(event.target.checked)} /> I want to review local air-gesture consent.</label><button className="outline-button" disabled={!spatialUnlocked} onClick={() => toast(gestureConsent ? "Desktop consent proposal prepared." : "Confirm the separate consent acknowledgement first.", { description: gestureConsent ? "The installed prototype processes transient local hand landmarks only; it does not retain video or biometric templates." : "A camera never opens from this preview." })}>Prepare consent review</button></div>
       </section>
 

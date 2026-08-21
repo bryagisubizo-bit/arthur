@@ -122,6 +122,9 @@ def main():
     assert window.spatial_page.face_audio_cue.isChecked() is False
     assert window.spatial_page.face_lockout_timer.isActive() is True
     assert "no recent local face-check failures" in window.spatial_page.face_lockout_label.text().lower()
+    assert "no transport is open" in window.spatial_page.context_sync_status.text().lower()
+    assert "Research field" in window.spatial_page.context_focus_label.text()
+    assert "camera, microphone, provider, and network connections remain off" in window.spatial_page.context_sync_status.text().lower()
     assert "choose exactly one method" in window.spatial_page.hello_privacy_note.text().lower()
     assert "starts only after separate consent and enrolment" in window.spatial_page.hello_privacy_note.text().lower()
     assert "stores no raw image or video" in window.spatial_page.hello_privacy_note.text().lower()
