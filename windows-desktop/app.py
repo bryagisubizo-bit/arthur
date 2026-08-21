@@ -43,6 +43,7 @@ from face_access import (
     verify_recovery_secret as verify_face_recovery_secret,
 )
 from spatial_access import clear_password as clear_spatial_password, has_password as spatial_password_is_configured, set_password as set_spatial_password, verify_password as verify_spatial_password
+from coordinate_layout import coordinate_snapshot, zone_members
 from voice_runtime import VoiceRuntime, available_input_devices, diagnose_wake_word, microphone_readiness, test_microphone_activity
 from voice_synthesis import ROUTES as VOICE_SYNTHESIS_ROUTES, describe_route as describe_synthesis_route
 from windows_hello import availability as windows_hello_availability, verify as verify_windows_hello
@@ -1471,16 +1472,45 @@ class SpatialWorkspacePage(QWidget):
         self.context_nodes_label = QLabel()
         self.context_nodes_label.setObjectName("muted")
         self.context_nodes_label.setWordWrap(True)
+        self.context_zone_label = QLabel()
+        self.context_zone_label.setObjectName("muted")
+        self.context_zone_label.setWordWrap(True)
+        self.context_coordinate_label = QLabel()
+        self.context_coordinate_label.setObjectName("muted")
+        self.context_coordinate_label.setWordWrap(True)
         self.context_sync_status = QLabel("No transport is open. Layout changes remain in this Arthur session only.")
         self.context_sync_status.setObjectName("safetyBoundary")
         self.context_sync_status.setWordWrap(True)
         context_layout.addRow("Focused module:", self.context_focus_label)
         context_layout.addRow("Visible modules:", self.context_nodes_label)
+        context_layout.addRow("Priority zones:", self.context_zone_label)
+        context_layout.addRow("Coordinate revision:", self.context_coordinate_label)
         context_layout.addRow("Synchronization:", self.context_sync_status)
         layout.addWidget(context_map)
         self.card_list.currentTextChanged.connect(lambda _label: self.update_context_map("module.focus"))
         self.card_list.model().rowsMoved.connect(lambda *_args: self.update_context_map("module.move"))
         self.update_context_map("initial")
+
+        multimodal = QGroupBox("Multimodal & environment adapters — review only")
+        multimodal_layout = QFormLayout(multimodal)
+        self.multimodal_status = QLabel(
+            "Speech, camera vision, screen/window sharing, and coordinate streaming are disabled. "
+            "No microphone, camera, display picker, WebSocket, provider, or local listener is opened here."
+        )
+        self.multimodal_status.setObjectName("safetyBoundary")
+        self.multimodal_status.setWordWrap(True)
+        self.environment_hub_status = QLabel(
+            "Home Assistant and MQTT remain disconnected proposals. Arthur performs no network discovery, broker connection, scene change, or device action."
+        )
+        self.environment_hub_status.setObjectName("muted")
+        self.environment_hub_status.setWordWrap(True)
+        self.multimodal_review_button = QPushButton("Review future adapter requirements")
+        self.multimodal_review_button.setObjectName("secondaryButton")
+        self.multimodal_review_button.clicked.connect(self.review_multimodal_adapter_requirements)
+        multimodal_layout.addRow("Input & stream state:", self.multimodal_status)
+        multimodal_layout.addRow("Environment hub:", self.environment_hub_status)
+        multimodal_layout.addRow("Activation path:", self.multimodal_review_button)
+        layout.addWidget(multimodal)
 
         air = QGroupBox("Optional local air gestures")
         air_layout = QFormLayout(air)
@@ -1841,10 +1871,38 @@ class SpatialWorkspacePage(QWidget):
         selected = self.card_list.currentItem().text() if self.card_list.currentItem() else "No module selected"
         if event != "initial":
             self.context_revision += 1
-        self.context_focus_label.setText(f"{selected} · revision {self.context_revision}")
+        snapshot = coordinate_snapshot(labels, selected, self.context_revision, event)
+        focused_coordinate = next((module["coordinate"] for module in snapshot["modules"] if module["label"] == selected), None)
+        self.context_focus_label.setText(
+            f"Focus zone · {selected} · X {focused_coordinate['x']} / Y {focused_coordinate['y']} / Z {focused_coordinate['z']}"
+            if focused_coordinate
+            else "No focus-zone module. Restore or select an Arthur workspace card."
+        )
         self.context_nodes_label.setText("  →  ".join(labels) if labels else "No visible modules. Restore a discarded card to rebuild this local layout.")
+        def describe_zone(name):
+            members = zone_members(snapshot, name)
+            return ", ".join(members) if members else "none"
+        self.context_zone_label.setText(
+            f"Focus: {describe_zone('focus')} · Periphery: {describe_zone('periphery')} · Ambient: {describe_zone('ambient')}"
+        )
+        self.context_coordinate_label.setText(
+            f"{snapshot['schema']} · local revision {snapshot['revision']} · {snapshot['event']} · transport {snapshot['transport']}"
+        )
         access = "Session access verified" if self.session_unlocked else "Room access required"
-        self.context_sync_status.setText(f"No transport is open. Last local layout event: {event}. {access}. Camera, microphone, provider, and network connections remain off.")
+        self.context_sync_status.setText(f"No transport is open. Local JSON coordinate revisions remain in this Arthur session only. {access}. Camera, microphone, provider, and network connections remain off.")
+
+    def review_multimodal_adapter_requirements(self):
+        """Describe future opt-in steps without enabling a capture or network adapter."""
+        QMessageBox.information(
+            self,
+            "Multimodal adapter review",
+            "Speech requires a selected route plus separate device and engine/provider approval.\n\n"
+            "Camera vision requires an unlocked Spatial Room, selected camera, visible local indicator, and a time-bounded consented session.\n\n"
+            "Screen sharing requires selecting one display or window for each session.\n\n"
+            "Coordinate streaming requires an approved loopback port, named client, session limit, and firewall review.\n\n"
+            "Home Assistant or MQTT requires an endpoint, developer-managed credential, one named scene or topic, and confirmation before each device action.\n\n"
+            "This review does not open a device, socket, provider, local network, or environment hub.",
+        )
 
     def move_selection(self, delta):
         if not self.session_unlocked:

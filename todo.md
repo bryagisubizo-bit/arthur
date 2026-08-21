@@ -412,3 +412,11 @@
 - [x] Produce an architecture schematic separating the contextual AI core, consent ledger, local device adapters, real-time state synchronization, and spatial UI layers.
 - [x] Extend the browser and Windows Spatial Workspace with visible floating modules, node-graph context, and consent-gated local spatial-input readiness without enabling live microphone, camera, environment capture, or network streaming.
 - [x] Add modular, commented spatial layout and real-time state contracts, regression coverage, and a plain-language guide for future provider or device activation.
+
+## Lightweight Coordinate, Multimodal & Environment Foundation
+
+- [x] Add a priority-aware coordinate contract with focus, periphery, and ambient zones for Arthur’s browser and Windows spatial workspaces, including X/Y/Z placement metadata and an explicit local-only revision stream.
+- [x] Add lightweight Python coordinate-server and multi-monitor mapping foundations using optional Windows-native adapters, with bounded resource sampling and no unsolicited window movement or desktop automation.
+- [x] Add consent-gated speech, vision, screen-sharing, and streaming adapter contracts that remain disabled until separately approved; do not open capture devices, connect WebSockets, or transmit media by default.
+- [x] Add consent-gated Home Assistant and MQTT environment-control contracts for future task or mood scenes without network discovery, device control, broker connection, or stored credentials.
+- [x] Document the low-resource architecture, configuration requirements, activation sequence, and exact future API or device credentials needed before any provider or device integration is activated.

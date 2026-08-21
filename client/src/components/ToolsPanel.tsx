@@ -4,8 +4,11 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { prepareSymptomGuidance, type SymptomGuidance } from "@/lib/symptomSupport";
 import SpatialContextGraph from "@/components/SpatialContextGraph";
+import MultimodalReadinessPanel from "@/components/MultimodalReadinessPanel";
 import {
   createInitialSpatialWorkspace,
+  coordinateForSpatialModule,
+  coordinateRevision,
   discardSpatialModule,
   focusSpatialModule,
   focusedSpatialModule,
@@ -113,6 +116,8 @@ export default function ToolsPanel({ focusSpatial = false }: { focusSpatial?: bo
   const spatialWorkspaceRef = useRef<HTMLElement | null>(null);
   const active = routeModes.find((item) => item.name === activeRoute) ?? routeModes[0];
   const selectedSpatialCard = focusedSpatialModule(spatialWorkspace);
+  const spatialRevision = coordinateRevision(spatialWorkspace);
+  const selectedSpatialCoordinate = selectedSpatialCard ? coordinateForSpatialModule(selectedSpatialCard, spatialWorkspace.focusedId) : null;
 
   useEffect(() => {
     if (!faceCooldownSeconds) return;
@@ -263,13 +268,15 @@ export default function ToolsPanel({ focusSpatial = false }: { focusSpatial?: bo
           </div>
         </div>
         <div className="spatial-canvas" aria-disabled={!spatialUnlocked} style={{ "--spatial-scale": spatialZoom / 100 } as CSSProperties} onTouchStart={(event) => { if (!spatialUnlocked) return; const touch = event.touches[0]; touchOrigin.current = touch ? { x: touch.clientX, y: touch.clientY } : null; }} onTouchEnd={(event) => { if (!spatialUnlocked) return; const origin = touchOrigin.current; const touch = event.changedTouches[0]; if (origin && touch && Math.abs(touch.clientX - origin.x) > 56) { moveSelection(touch.clientX > origin.x ? -1 : 1); toast("Touch swipe selected a neighbouring Arthur workspace card."); } touchOrigin.current = null; }} onWheel={(event) => { if (spatialUnlocked && event.ctrlKey) { event.preventDefault(); setSpatialZoom((current) => Math.min(150, Math.max(70, current + (event.deltaY < 0 ? 5 : -5)))); } }}>
-          <div className="spatial-canvas-meta"><span><MoveHorizontal size={15} /> {selectedSpatialCard?.label ?? "No card selected"}</span><span>{spatialZoom}% canvas</span></div>
-          <div className="spatial-card-strip" aria-label="Touch-reorderable Arthur workspace cards">{spatialWorkspace.modules.map((card, index) => <button key={card.id} disabled={!spatialUnlocked} draggable={spatialUnlocked} onDragStart={() => { dragCard.current = card.id; }} onDragOver={(event) => { if (spatialUnlocked) event.preventDefault(); }} onDrop={() => reorderSpatialCard(card.id)} onClick={() => setSpatialWorkspace((current) => focusSpatialModule(current, card.id))} className={`spatial-card ${selectedSpatialCard?.id === card.id ? "active" : ""}`} aria-pressed={selectedSpatialCard?.id === card.id}><span>{String(index + 1).padStart(2, "0")}</span><b>{card.label}</b></button>)}</div>
+          <div className="spatial-canvas-meta"><span><MoveHorizontal size={15} /> {selectedSpatialCard?.label ?? "No card selected"}{selectedSpatialCoordinate ? ` · ${selectedSpatialCoordinate.zone} · X ${selectedSpatialCoordinate.x} / Y ${selectedSpatialCoordinate.y} / Z ${selectedSpatialCoordinate.z}` : ""}</span><span>{spatialZoom}% canvas · local revision {spatialRevision.revision}</span></div>
+          <div className="spatial-card-strip" aria-label="Touch-reorderable Arthur workspace cards">{spatialWorkspace.modules.map((card, index) => { const coordinate = coordinateForSpatialModule(card, spatialWorkspace.focusedId); return <button key={card.id} disabled={!spatialUnlocked} draggable={spatialUnlocked} onDragStart={() => { dragCard.current = card.id; }} onDragOver={(event) => { if (spatialUnlocked) event.preventDefault(); }} onDrop={() => reorderSpatialCard(card.id)} onClick={() => setSpatialWorkspace((current) => focusSpatialModule(current, card.id))} className={`spatial-card zone-${coordinate.zone} ${selectedSpatialCard?.id === card.id ? "active" : ""}`} aria-pressed={selectedSpatialCard?.id === card.id}><span>{String(index + 1).padStart(2, "0")}</span><b>{card.label}</b><small>{coordinate.zone} · X {coordinate.x} / Y {coordinate.y} / Z {coordinate.z}</small></button>; })}</div>
         </div>
         <SpatialContextGraph modules={spatialWorkspace.modules} focusedId={spatialWorkspace.focusedId} revision={spatialWorkspace.revision} lastEvent={spatialWorkspace.lastEvent} unlocked={spatialUnlocked} />
         <div className="spatial-controls"><button className="outline-button" disabled={!spatialUnlocked} onClick={() => moveSelection(-1)}>Previous card</button><button className="outline-button" disabled={!spatialUnlocked} onClick={() => moveSelection(1)}>Next card</button><label>Zoom<input disabled={!spatialUnlocked} type="range" min="70" max="150" value={spatialZoom} onChange={(event) => setSpatialZoom(Number(event.target.value))} /></label><button className="outline-button" disabled={!spatialUnlocked || !selectedSpatialCard} onClick={discardSelectedSpatialCard}><Trash2 size={15} /> Discard selected</button><button className="text-button" disabled={!spatialUnlocked || !spatialWorkspace.discarded} onClick={restoreDiscardedSpatialCard}>Undo discard</button></div>
         <div className="gesture-consent-callout"><Hand size={18} /><div><b>Camera-based air gestures are optional and off.</b><p>Enable only in the Windows prototype after manually installing the optional requirements, selecting a local camera, unlocking this room, and accepting the visible local-only camera indicator. The preview neither opens a camera nor reads video.</p></div><label className="review-choice"><input disabled={!spatialUnlocked} type="checkbox" checked={gestureConsent} onChange={(event) => setGestureConsent(event.target.checked)} /> I want to review local air-gesture consent.</label><button className="outline-button" disabled={!spatialUnlocked} onClick={() => toast(gestureConsent ? "Desktop consent proposal prepared." : "Confirm the separate consent acknowledgement first.", { description: gestureConsent ? "The installed prototype processes transient local hand landmarks only; it does not retain video or biometric templates." : "A camera never opens from this preview." })}>Prepare consent review</button></div>
       </section>
+
+      <MultimodalReadinessPanel />
 
       {!focusSpatial && <>
       <section className="tools-panel symptom-support-review">

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   createInitialSpatialWorkspace,
+  coordinateRevision,
   discardSpatialModule,
   focusedSpatialModule,
+  modulesInSpatialZone,
   moveSpatialFocus,
   reorderSpatialModule,
   restoreSpatialModule,
@@ -29,5 +31,14 @@ describe("local spatial workspace contract", () => {
     const state = moveSpatialFocus(createInitialSpatialWorkspace(), 1);
     expect(focusedSpatialModule(state)?.id).toBe("diagnostics");
     expect(state.lastEvent?.actor).toBe("local-user");
+  });
+
+  it("creates a bounded local coordinate revision with focus, periphery, and ambient zones", () => {
+    const revision = coordinateRevision(createInitialSpatialWorkspace());
+    expect(revision).toMatchObject({ schema: "arthur.coordinate.v1", transport: "closed", actor: "local-user", revision: 0 });
+    expect(revision.modules.find((module) => module.id === "research")?.coordinate).toEqual({ x: 0, y: 0, z: 300, zone: "focus" });
+    const state = createInitialSpatialWorkspace();
+    expect(modulesInSpatialZone(state, "periphery").map((module) => module.id)).toContain("diagnostics");
+    expect(modulesInSpatialZone(state, "ambient").map((module) => module.id)).toEqual(["home"]);
   });
 });

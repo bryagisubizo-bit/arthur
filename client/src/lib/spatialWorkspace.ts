@@ -6,12 +6,21 @@
  * but rendering a workspace never opens a socket, camera, microphone, or provider.
  */
 export type SpatialEventKind = "module.focus" | "module.move" | "module.discard" | "module.restore";
+export type SpatialZone = "focus" | "periphery" | "ambient";
+
+export type SpatialCoordinate = {
+  x: number;
+  y: number;
+  z: number;
+  zone: SpatialZone;
+};
 
 export type SpatialModule = {
   id: string;
   label: string;
   category: "context" | "signal" | "control";
   detail: string;
+  preferredZone: Exclude<SpatialZone, "focus">;
 };
 
 export type SpatialWorkspaceEvent = {
@@ -31,13 +40,61 @@ export type SpatialWorkspaceState = {
   lastEvent: SpatialWorkspaceEvent | null;
 };
 
+export type SpatialCoordinateRevision = {
+  schema: "arthur.coordinate.v1";
+  transport: "closed";
+  revision: number;
+  actor: "local-user";
+  event: SpatialEventKind | "initial";
+  focusedModuleId: string;
+  modules: Array<{ id: string; label: string; coordinate: SpatialCoordinate }>;
+};
+
 const initialModules: SpatialModule[] = [
-  { id: "research", label: "Research field", category: "context", detail: "Approved source context remains visible." },
-  { id: "diagnostics", label: "System diagnostics", category: "signal", detail: "Local read-only health surface." },
-  { id: "notes", label: "Private note", category: "context", detail: "User-controlled local note surface." },
-  { id: "voice", label: "Voice signal", category: "signal", detail: "Speech readiness, not microphone capture." },
-  { id: "home", label: "Smart-home review", category: "control", detail: "Connection proposal only; no device control." },
+  { id: "research", label: "Research field", category: "context", detail: "Approved source context remains visible.", preferredZone: "periphery" },
+  { id: "diagnostics", label: "System diagnostics", category: "signal", detail: "Local read-only health surface.", preferredZone: "periphery" },
+  { id: "notes", label: "Private note", category: "context", detail: "User-controlled local note surface.", preferredZone: "periphery" },
+  { id: "voice", label: "Voice signal", category: "signal", detail: "Speech readiness, not microphone capture.", preferredZone: "periphery" },
+  { id: "home", label: "Smart-home review", category: "control", detail: "Connection proposal only; no device control.", preferredZone: "ambient" },
 ];
+
+const preferredCoordinates: Record<string, Omit<SpatialCoordinate, "zone">> = {
+  diagnostics: { x: -72, y: -8, z: 40 },
+  notes: { x: 72, y: 8, z: 40 },
+  voice: { x: -64, y: 58, z: 35 },
+  home: { x: 0, y: -70, z: 10 },
+};
+
+/**
+ * Calculate workspace-relative placement only. These numbers are never desktop
+ * pixel positions and this helper never moves a Windows application.
+ */
+export function coordinateForSpatialModule(module: SpatialModule, focusedId: string): SpatialCoordinate {
+  if (module.id === focusedId) return { x: 0, y: 0, z: 300, zone: "focus" };
+  const preferred = preferredCoordinates[module.id] ?? { x: 64, y: -36, z: 35 };
+  return { ...preferred, zone: module.preferredZone };
+}
+
+/**
+ * Create JSON-ready local state for browser/desktop parity. The fixed closed
+ * transport value makes explicit that rendering this revision does not open a
+ * WebSocket or send it anywhere.
+ */
+export function coordinateRevision(state: SpatialWorkspaceState): SpatialCoordinateRevision {
+  return {
+    schema: "arthur.coordinate.v1",
+    transport: "closed",
+    revision: state.revision,
+    actor: "local-user",
+    event: state.lastEvent?.kind ?? "initial",
+    focusedModuleId: state.focusedId,
+    modules: state.modules.map((module) => ({ id: module.id, label: module.label, coordinate: coordinateForSpatialModule(module, state.focusedId) })),
+  };
+}
+
+export function modulesInSpatialZone(state: SpatialWorkspaceState, zone: SpatialZone): SpatialModule[] {
+  return state.modules.filter((module) => coordinateForSpatialModule(module, state.focusedId).zone === zone);
+}
 
 export const createInitialSpatialWorkspace = (): SpatialWorkspaceState => ({
   modules: initialModules.map((module) => ({ ...module })),
