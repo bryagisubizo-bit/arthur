@@ -44,6 +44,7 @@ from face_access import (
 )
 from spatial_access import clear_password as clear_spatial_password, has_password as spatial_password_is_configured, set_password as set_spatial_password, verify_password as verify_spatial_password
 from voice_runtime import VoiceRuntime, available_input_devices, diagnose_wake_word, microphone_readiness, test_microphone_activity
+from voice_synthesis import ROUTES as VOICE_SYNTHESIS_ROUTES, describe_route as describe_synthesis_route
 from windows_hello import availability as windows_hello_availability, verify as verify_windows_hello
 from provider_connection import run_approved_connection_test, setup_state
 from installer_consent import apply_installer_defaults, load_installer_consent
@@ -115,6 +116,7 @@ SPEECH_RECOGNITION_ROUTES = {
         "detail": "Requires an approved developer-managed provider connection and separate microphone/listening consent. Arthur does not send audio until those steps are complete.",
     },
 }
+VOICE_SYNTHESIS_ROUTE_PLACEHOLDER = "Choose how Arthur should speak responses"
 
 
 def profile_language_choices():
@@ -151,6 +153,22 @@ def selected_speech_recognition_route(combo):
     """Return only a deliberately selected supported recognition route."""
     route_id = str(combo.currentData() or "").strip()
     return route_id if route_id in SPEECH_RECOGNITION_ROUTES else ""
+
+
+def configure_voice_synthesis_route_combo(combo, selected=""):
+    """Populate a required speech-output route selector without activating an engine."""
+    combo.clear()
+    combo.addItem(VOICE_SYNTHESIS_ROUTE_PLACEHOLDER, "")
+    for route_id, route in VOICE_SYNTHESIS_ROUTES.items():
+        combo.addItem(route.label, route_id)
+    selected_index = combo.findData(str(selected or "").strip())
+    combo.setCurrentIndex(selected_index if selected_index >= 0 else 0)
+
+
+def selected_voice_synthesis_route(combo):
+    """Return only a deliberately selected supported speech-output route."""
+    route_id = str(combo.currentData() or "").strip()
+    return route_id if route_id in VOICE_SYNTHESIS_ROUTES else ""
 
 DEFAULT_GREETING_SCRIPTS = {
     "introduction": "Good {time_of_day}, {recipient}. I am Arthur, your local desktop assistant. I am ready when you are.",
@@ -359,6 +377,7 @@ DEFAULT_CONFIG = {
     },
     "voice": {
         "speech_recognition_route": "",
+        "voice_synthesis_route": "",
         "wake_word_model": "",
         "wake_word_listener_approved": False,
         "input_device": None,
@@ -442,7 +461,7 @@ class FirstRunDialog(QDialog):
         layout.addWidget(title)
         explanation = QLabel(
             "Choose the primary system language Arthur should use for both typed and voice conversations. You can change it later in Profile. "
-            "Then choose how it should recognise spoken commands. The name pronunciation field may contain a phonetic spelling or a short pronunciation note."
+            "Then choose how it should recognise spoken commands and speak approved replies. The name pronunciation field may contain a phonetic spelling or a short pronunciation note."
         )
         explanation.setWordWrap(True)
         explanation.setObjectName("muted")
@@ -461,6 +480,12 @@ class FirstRunDialog(QDialog):
         self.speech_route_note.setObjectName("muted")
         self.speech_route_note.setWordWrap(True)
         self.speech_route.currentIndexChanged.connect(self.update_speech_route_note)
+        self.synthesis_route = QComboBox()
+        configure_voice_synthesis_route_combo(self.synthesis_route)
+        self.synthesis_route_note = QLabel("Choose a local Windows speech engine or a developer-configured neural provider. This choice does not download a model, start the microphone, clone a voice, transmit text, or connect a provider.")
+        self.synthesis_route_note.setObjectName("muted")
+        self.synthesis_route_note.setWordWrap(True)
+        self.synthesis_route.currentIndexChanged.connect(self.update_synthesis_route_note)
         self.additional = QLineEdit()
         self.additional.setPlaceholderText("Optional: Spanish, Arabic, etc.")
         self.music = QComboBox()
@@ -472,6 +497,8 @@ class FirstRunDialog(QDialog):
         form.addRow("Primary system language (required):", self.native_language)
         form.addRow("Speech recognition (required):", self.speech_route)
         form.addRow("Route readiness:", self.speech_route_note)
+        form.addRow("Speech output (required):", self.synthesis_route)
+        form.addRow("Output boundary:", self.synthesis_route_note)
         form.addRow("Other languages:", self.additional)
         form.addRow("Music source:", self.music)
         form.addRow("Wake word:", self.wake_word)
@@ -491,6 +518,10 @@ class FirstRunDialog(QDialog):
         detail = SPEECH_RECOGNITION_ROUTES.get(route_id, {}).get("detail")
         self.speech_route_note.setText(detail or "Choose local/offline recognition or a developer-configured provider. This choice does not install software, download a model, open the microphone, record audio, or connect a provider.")
 
+    def update_synthesis_route_note(self):
+        route = describe_synthesis_route(selected_voice_synthesis_route(self.synthesis_route))
+        self.synthesis_route_note.setText(route.boundary if route else "Choose a local Windows speech engine or a developer-configured neural provider. This choice does not download a model, start the microphone, clone a voice, transmit text, or connect a provider.")
+
     def accept(self):
         if not self.name.text().strip():
             QMessageBox.warning(self, "Name required", "Please enter the name Arthur should use for you.")
@@ -503,6 +534,10 @@ class FirstRunDialog(QDialog):
         if not speech_route:
             QMessageBox.warning(self, "Speech recognition route required", "Choose local/offline speech recognition or a developer-configured speech-to-text provider before configuring the profile.")
             return
+        synthesis_route = selected_voice_synthesis_route(self.synthesis_route)
+        if not synthesis_route:
+            QMessageBox.warning(self, "Speech output route required", "Choose a local Windows speech engine or a developer-configured neural voice provider before configuring the profile.")
+            return
         additional = [item.strip() for item in self.additional.text().split(",") if item.strip()]
         self.completed.emit({
             "display_name": self.name.text().strip(),
@@ -514,6 +549,7 @@ class FirstRunDialog(QDialog):
             "title": self.title.text().strip() or "Sir",
             "spoken_only": self.spoken_only.isChecked(),
             "speech_recognition_route": speech_route,
+            "voice_synthesis_route": synthesis_route,
         })
         super().accept()
 
@@ -2163,6 +2199,13 @@ class VoiceStudioPage(QWidget):
         self.speech_route_status.setObjectName("muted")
         self.speech_route_status.setWordWrap(True)
         diagnostic_layout.addRow("Spoken commands:", self.speech_route_status)
+        synthesis_route = describe_synthesis_route(str(config.get("voice", {}).get("voice_synthesis_route", "")))
+        self.synthesis_route_status = QLabel(
+            f"Selected route: {synthesis_route.label}. {synthesis_route.detail} {synthesis_route.boundary}" if synthesis_route else "Speech-output route is not selected. Complete first-run setup before Arthur can prepare spoken replies."
+        )
+        self.synthesis_route_status.setObjectName("muted")
+        self.synthesis_route_status.setWordWrap(True)
+        diagnostic_layout.addRow("Spoken replies:", self.synthesis_route_status)
         self.microphone = QComboBox()
         self.refresh_microphone_devices()
         microphone_row = QHBoxLayout()
@@ -3017,7 +3060,9 @@ class ProfilePage(QWidget):
         self.native = QComboBox()
         configure_primary_language_combo(self.native, profile.get("native_language", ""))
         self.speech_route = QComboBox()
-        configure_speech_recognition_route_combo(self.speech_route, profile.get("speech_recognition_route", ""))
+        configure_speech_recognition_route_combo(self.speech_route, config.get("voice", {}).get("speech_recognition_route", ""))
+        self.synthesis_route = QComboBox()
+        configure_voice_synthesis_route_combo(self.synthesis_route, config.get("voice", {}).get("voice_synthesis_route", ""))
         self.additional = QLineEdit(", ".join(profile.get("additional_languages", [])))
         self.wake = QLineEdit(profile.get("wake_word", "Arthur"))
         self.title_field = QLineEdit(profile.get("title", "Sir"))
@@ -3025,6 +3070,7 @@ class ProfilePage(QWidget):
         form.addRow("Pronunciation:", self.pronunciation)
         form.addRow("Primary system language (required):", self.native)
         form.addRow("Speech recognition route (required):", self.speech_route)
+        form.addRow("Speech output route (required):", self.synthesis_route)
         form.addRow("Additional languages:", self.additional)
         form.addRow("Wake word:", self.wake)
         form.addRow("Title:", self.title_field)
@@ -3043,18 +3089,23 @@ class ProfilePage(QWidget):
         if not speech_route:
             QMessageBox.warning(self, "Speech recognition route required", "Choose local/offline speech recognition or a developer-configured speech-to-text provider before saving this profile.")
             return
+        synthesis_route = selected_voice_synthesis_route(self.synthesis_route)
+        if not synthesis_route:
+            QMessageBox.warning(self, "Speech output route required", "Choose a local Windows speech engine or a developer-configured neural voice provider before saving this profile.")
+            return
         self.config["profile"].update({
             "display_name": self.name.text().strip(),
             "pronunciation": self.pronunciation.text().strip(),
             "native_language": primary_language,
             "active_conversation_language": primary_language,
-            "speech_recognition_route": speech_route,
             "additional_languages": [x.strip() for x in self.additional.text().split(",") if x.strip()],
             "wake_word": self.wake.text().strip() or "Arthur",
             "title": self.title_field.text().strip() or "Sir",
         })
+        self.config.setdefault("voice", {})["speech_recognition_route"] = speech_route
+        self.config.setdefault("voice", {})["voice_synthesis_route"] = synthesis_route
         self.save_callback()
-        QMessageBox.information(self, "Personal Protocol saved", f"Arthur will use {primary_language} for typed and voice interactions with the selected speech-recognition route. This does not enable microphone access.")
+        QMessageBox.information(self, "Personal Protocol saved", f"Arthur will use {primary_language} for typed and voice interactions with the selected speech-recognition and speech-output routes. This does not enable microphone access, synthesize audio, or connect a provider.")
 
 
 class ConductMemoryPage(QWidget):
@@ -3663,7 +3714,7 @@ class MainWindow(QMainWindow):
         self.build_ui()
         self.apply_appearance(self.config.get("appearance", {}))
         self.build_tray()
-        if not self.config.get("setup_complete") or not self.config.get("profile", {}).get("native_language") or not self.config.get("voice", {}).get("speech_recognition_route"):
+        if not self.config.get("setup_complete") or not self.config.get("profile", {}).get("native_language") or not self.config.get("voice", {}).get("speech_recognition_route") or not self.config.get("voice", {}).get("voice_synthesis_route"):
             QTimer.singleShot(250, self.show_first_run)
         elif self.config.get("privacy", {}).get("spoken_only", True) and self.config.get("voice", {}).get("arrival_greeting_enabled", False):
             QTimer.singleShot(650, self.play_arrival_greeting)
@@ -3908,10 +3959,12 @@ class MainWindow(QMainWindow):
             })
             self.config["privacy"]["spoken_only"] = dialog.spoken_only.isChecked()
             self.config.setdefault("voice", {})["speech_recognition_route"] = selected_speech_recognition_route(dialog.speech_route)
+            self.config.setdefault("voice", {})["voice_synthesis_route"] = selected_voice_synthesis_route(dialog.synthesis_route)
             self.config["setup_complete"] = True
             self.save_all()
             route = SPEECH_RECOGNITION_ROUTES[self.config["voice"]["speech_recognition_route"]]["label"]
-            QMessageBox.information(self, "Arthur profile configured", f"Welcome, {self.config['profile']['display_name']}. Arthur is configured for {self.config['profile']['native_language']} with {route}. Complete its separate readiness and listening approvals before Arthur can understand a spoken command.")
+            synthesis_route = VOICE_SYNTHESIS_ROUTES[self.config["voice"]["voice_synthesis_route"]].label
+            QMessageBox.information(self, "Arthur profile configured", f"Welcome, {self.config['profile']['display_name']}. Arthur is configured for {self.config['profile']['native_language']} with {route} and {synthesis_route}. Complete the separate readiness and listening approvals before Arthur can understand a spoken command; selecting a speech-output route does not synthesize audio or connect a provider.")
             self.show_tutorial()
             if self.config.get("privacy", {}).get("spoken_only", True) and self.config.get("voice", {}).get("first_interaction_greeting_enabled", True):
                 QTimer.singleShot(300, self.play_first_interaction_introduction)

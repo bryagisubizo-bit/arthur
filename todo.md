@@ -398,3 +398,10 @@
 - [x] Inspect the Windows system-sensors regression failure and confirm the expected contract for partial sensor availability.
 - [x] Correct the regression so valid available readings do not fail an unavailable-state test, while preserving clear unavailable behavior for unsupported sensors.
 - [x] Run the complete desktop build regression path, synchronize the repair, rebuild the credential-free handoff archive, and provide the user a safe retry command.
+
+## Voice Synthesis Pathway
+
+- [x] Review Arthur’s current speech output, Voice Studio, and provider settings to define the safe local and provider-based voice-synthesis routes.
+- [x] Add visible text-processing, speech-unit/engine, and audio-output readiness states with an explicit local or provider voice-engine selection.
+- [x] Preserve consent boundaries: do not download neural voice models, clone voices, transmit text/audio, or enable a provider route automatically.
+- [x] Add regression coverage, synchronize the desktop and browser guidance, validate the build handoff, and document how to activate speech output.

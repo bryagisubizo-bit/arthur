@@ -17,7 +17,7 @@ compile(source_path.read_text(encoding="utf-8"), str(source_path), "exec")
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 
-from app import DEFAULT_CONFIG, CommandPlanner, FirstRunDialog, FirstRunTutorialDialog, MainWindow, PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER, PROVIDER_OPTIONS, SPEECH_RECOGNITION_ROUTE_PLACEHOLDER, is_time_in_window, profile_language_choices, render_greeting_script
+from app import DEFAULT_CONFIG, CommandPlanner, FirstRunDialog, FirstRunTutorialDialog, MainWindow, PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER, PROVIDER_OPTIONS, SPEECH_RECOGNITION_ROUTE_PLACEHOLDER, VOICE_SYNTHESIS_ROUTE_PLACEHOLDER, is_time_in_window, profile_language_choices, render_greeting_script
 
 
 def main():
@@ -50,6 +50,8 @@ def main():
     assert window.config["profile"]["active_conversation_language"] == ""
     assert window.profile_page.speech_route.itemText(0) == SPEECH_RECOGNITION_ROUTE_PLACEHOLDER
     assert window.profile_page.speech_route.currentData() == ""
+    assert window.profile_page.synthesis_route.itemText(0) == VOICE_SYNTHESIS_ROUTE_PLACEHOLDER
+    assert window.profile_page.synthesis_route.currentData() == ""
     assert window.language_library_page.catalogue_list.count() > 80
     assert "Selected: " in window.language_library_page.active_label.text()
     assert window.language_library_page.save_colloquial_draft_button.text() == "Save private local draft"
@@ -73,6 +75,9 @@ def main():
     assert first_run.speech_route.itemText(0) == SPEECH_RECOGNITION_ROUTE_PLACEHOLDER
     assert first_run.speech_route.currentData() == ""
     assert "This choice does not install software" in first_run.speech_route_note.text()
+    assert first_run.synthesis_route.itemText(0) == VOICE_SYNTHESIS_ROUTE_PLACEHOLDER
+    assert first_run.synthesis_route.currentData() == ""
+    assert "does not download a model" in first_run.synthesis_route_note.text()
     assert "Diné Bizaad (Navajo)" in profile_language_choices()
     first_run.close()
     assert window.config["security"]["defensive_lookup_enabled"] is False
@@ -96,6 +101,7 @@ def main():
     assert any(button.text() == "Open Windows microphone privacy settings" for button in window.voice_studio.findChildren(type(window.voice_studio.introduction_test_button)))
     assert window.voice_studio.microphone.count() >= 1
     assert "Speech-recognition route is not selected" in window.voice_studio.speech_route_status.text()
+    assert "Speech-output route is not selected" in window.voice_studio.synthesis_route_status.text()
     assert window.voice_studio.greeting_script_kind.currentData() == "opening"
     assert window.voice_studio.greeting_script.toPlainText()
     assert window.voice_studio.time_of_day_greetings.isChecked() is False
