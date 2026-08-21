@@ -420,3 +420,11 @@
 - [x] Add consent-gated speech, vision, screen-sharing, and streaming adapter contracts that remain disabled until separately approved; do not open capture devices, connect WebSockets, or transmit media by default.
 - [x] Add consent-gated Home Assistant and MQTT environment-control contracts for future task or mood scenes without network discovery, device control, broker connection, or stored credentials.
 - [x] Document the low-resource architecture, configuration requirements, activation sequence, and exact future API or device credentials needed before any provider or device integration is activated.
+
+## Cloud-Assisted Low-Resource & Multi-Monitor Foundation
+
+- [x] Define the cloud-assisted intelligence boundary: keep local work to native Windows layout, consent, and bounded telemetry while sending no user content to a cloud provider until an approved gateway and key are configured.
+- [x] Add a lean Windows monitor-map and window-management contract built around optional `screeninfo` and `pywin32`, with target-preview, user confirmation, process/window selection, reversible placement, and no automatic window movement.
+- [x] Add CPU and memory guardrails, bounded polling, exponential backoff, and explicit stop states so Arthur remains appropriate for an 8 GB RAM, 2.4 GHz Windows computer.
+- [x] Add a provider-neutral cloud-gateway configuration surface that uses HTTPS by default, treats streaming as an optional later connection, and records the exact credentials needed without storing any keys in source.
+- [x] Document resource limits, setup dependencies, approved cloud connection steps, local privacy boundaries, and recovery/rollback behavior; synchronize and release the verified Windows source.

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { prepareSymptomGuidance, type SymptomGuidance } from "@/lib/symptomSupport";
 import SpatialContextGraph from "@/components/SpatialContextGraph";
 import MultimodalReadinessPanel from "@/components/MultimodalReadinessPanel";
+import CloudGatewayPanel from "@/components/CloudGatewayPanel";
 import {
   createInitialSpatialWorkspace,
   coordinateForSpatialModule,
@@ -277,6 +278,7 @@ export default function ToolsPanel({ focusSpatial = false }: { focusSpatial?: bo
       </section>
 
       <MultimodalReadinessPanel />
+      <CloudGatewayPanel privacyLocked={privacyMode} />
 
       {!focusSpatial && <>
       <section className="tools-panel symptom-support-review">

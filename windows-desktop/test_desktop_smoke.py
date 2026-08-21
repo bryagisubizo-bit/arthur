@@ -135,6 +135,15 @@ def main():
     assert "no microphone, camera, display picker, websocket, provider, or local listener is opened" in window.spatial_page.multimodal_status.text().lower()
     assert "home assistant and mqtt remain disconnected proposals" in window.spatial_page.environment_hub_status.text().lower()
     assert window.spatial_page.multimodal_review_button.text() == "Review future adapter requirements"
+    assert "no monitor map has been requested" in window.spatial_page.monitor_status.text().lower()
+    assert window.spatial_page.monitor_choice.isEnabled() is False
+    assert window.spatial_page.monitor_preview_button.isEnabled() is False
+    assert window.spatial_page.monitor_apply_button.isEnabled() is False
+    assert "no recurring cpu or memory polling" in window.spatial_page.monitor_resource_label.text().lower()
+    assert "cloud-assisted operating model" in window.spatial_page.cloud_gateway_status_label.parentWidget().title().lower()
+    assert "closed" in window.spatial_page.cloud_gateway_status_label.text().lower()
+    assert "no background polling or streaming" in window.spatial_page.cloud_gateway_resource_label.text().lower()
+    assert window.spatial_page.cloud_gateway_review_button.text() == "Review cloud connection requirements"
     assert "choose exactly one method" in window.spatial_page.hello_privacy_note.text().lower()
     assert "starts only after separate consent and enrolment" in window.spatial_page.hello_privacy_note.text().lower()
     assert "stores no raw image or video" in window.spatial_page.hello_privacy_note.text().lower()

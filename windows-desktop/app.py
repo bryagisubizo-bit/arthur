@@ -44,6 +44,8 @@ from face_access import (
 )
 from spatial_access import clear_password as clear_spatial_password, has_password as spatial_password_is_configured, set_password as set_spatial_password, verify_password as verify_spatial_password
 from coordinate_layout import coordinate_snapshot, zone_members
+from monitor_workspace import apply_approved_placement, discover_monitors, placement_preview, pywin32_mover, resource_budget
+from cloud_gateway import gateway_status as cloud_gateway_status, review_text as cloud_gateway_review_text
 from voice_runtime import VoiceRuntime, available_input_devices, diagnose_wake_word, microphone_readiness, test_microphone_activity
 from voice_synthesis import ROUTES as VOICE_SYNTHESIS_ROUTES, describe_route as describe_synthesis_route
 from windows_hello import availability as windows_hello_availability, verify as verify_windows_hello
@@ -64,6 +66,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -399,10 +402,18 @@ DEFAULT_CONFIG = {
         "touch_workspace_enabled": True,
         "air_gestures_approved": False,
         "gesture_camera_index": 0,
+        "monitor_placement_enabled": False,
         "spatial_room_hello_enabled": False,
         "spatial_room_access_method": "",
         "spatial_room_face_camera_index": 0,
         "spatial_room_face_audio_cues": False,
+    },
+    "cloud_gateway": {
+        "provider_label": "",
+        "endpoint": "",
+        "approved_data_classes": [],
+        "streaming_requested": False,
+        "connected": False,
     },
     "sensors": {
         "enabled": False,
@@ -1512,6 +1523,57 @@ class SpatialWorkspacePage(QWidget):
         multimodal_layout.addRow("Activation path:", self.multimodal_review_button)
         layout.addWidget(multimodal)
 
+        monitors = QGroupBox("Local monitor map & window placement — review first")
+        monitor_layout = QFormLayout(monitors)
+        self.monitor_status = QLabel(
+            "No monitor map has been requested. Arthur has not read display geometry, enumerated a process window, or moved any application."
+        )
+        self.monitor_status.setObjectName("safetyBoundary")
+        self.monitor_status.setWordWrap(True)
+        self.monitor_choice = QComboBox()
+        self.monitor_choice.setEnabled(False)
+        self.monitor_refresh_button = QPushButton("Refresh local monitor map")
+        self.monitor_refresh_button.setObjectName("secondaryButton")
+        self.monitor_refresh_button.clicked.connect(self.refresh_monitor_map)
+        self.monitor_preview_button = QPushButton("Preview one process placement")
+        self.monitor_preview_button.setObjectName("secondaryButton")
+        self.monitor_preview_button.setEnabled(False)
+        self.monitor_preview_button.clicked.connect(self.preview_monitor_placement)
+        self.monitor_apply_button = QPushButton("Apply reviewed placement…")
+        self.monitor_apply_button.setObjectName("secondaryButton")
+        self.monitor_apply_button.setEnabled(False)
+        self.monitor_apply_button.clicked.connect(self.apply_monitor_placement)
+        self.monitor_resource_label = QLabel("No recurring CPU or memory polling. Arthur checks the local budget only when you request a monitor-map review.")
+        self.monitor_resource_label.setObjectName("muted")
+        self.monitor_resource_label.setWordWrap(True)
+        self.monitor_preview = None
+        self.monitor_map = []
+        monitor_layout.addRow("Map state:", self.monitor_status)
+        monitor_layout.addRow("Target display:", self.monitor_choice)
+        monitor_layout.addRow("Local map:", self.monitor_refresh_button)
+        monitor_layout.addRow("Process target:", self.monitor_preview_button)
+        monitor_layout.addRow("Confirmed move:", self.monitor_apply_button)
+        monitor_layout.addRow("Resource guard:", self.monitor_resource_label)
+        layout.addWidget(monitors)
+
+        cloud_gateway = QGroupBox("Cloud-assisted operating model — review only")
+        cloud_layout = QFormLayout(cloud_gateway)
+        self.cloud_gateway_status_label = QLabel(cloud_gateway_status(config))
+        self.cloud_gateway_status_label.setObjectName("safetyBoundary")
+        self.cloud_gateway_status_label.setWordWrap(True)
+        self.cloud_gateway_resource_label = QLabel(
+            "Designed for Windows 11 with 8 GB RAM: layout, consent, and manual monitor review stay local; no background polling or streaming is enabled."
+        )
+        self.cloud_gateway_resource_label.setObjectName("muted")
+        self.cloud_gateway_resource_label.setWordWrap(True)
+        self.cloud_gateway_review_button = QPushButton("Review cloud connection requirements")
+        self.cloud_gateway_review_button.setObjectName("secondaryButton")
+        self.cloud_gateway_review_button.clicked.connect(self.review_cloud_gateway_requirements)
+        cloud_layout.addRow("Connection state:", self.cloud_gateway_status_label)
+        cloud_layout.addRow("Resource policy:", self.cloud_gateway_resource_label)
+        cloud_layout.addRow("Activation path:", self.cloud_gateway_review_button)
+        layout.addWidget(cloud_gateway)
+
         air = QGroupBox("Optional local air gestures")
         air_layout = QFormLayout(air)
         self.air_gestures = QCheckBox("I understand that enabling air gestures opens my selected camera locally")
@@ -1903,6 +1965,77 @@ class SpatialWorkspacePage(QWidget):
             "Home Assistant or MQTT requires an endpoint, developer-managed credential, one named scene or topic, and confirmation before each device action.\n\n"
             "This review does not open a device, socket, provider, local network, or environment hub.",
         )
+
+    def review_cloud_gateway_requirements(self):
+        """Describe a future cloud connection without reading secrets or opening a route."""
+        QMessageBox.information(self, "Cloud-assisted review", cloud_gateway_review_text())
+
+    def refresh_monitor_map(self):
+        """Read display rectangles once on an explicit button click; never capture pixels or open a continuous watcher."""
+        self.monitor_map = discover_monitors()
+        budget = resource_budget()
+        self.monitor_resource_label.setText(
+            f"Manual local budget · CPU {budget.get('cpu_percent', 'unavailable')}% · memory {budget.get('memory_percent', 'unavailable')}% · {budget['detail']}"
+        )
+        self.monitor_choice.clear()
+        for monitor in self.monitor_map:
+            primary = " · primary" if monitor.get("primary") else ""
+            self.monitor_choice.addItem(
+                f"{monitor['label']}{primary} · {monitor['width']}×{monitor['height']} at {monitor['x']}, {monitor['y']}", monitor
+            )
+        available = bool(self.monitor_map)
+        self.monitor_choice.setEnabled(available)
+        self.monitor_preview_button.setEnabled(available)
+        self.monitor_apply_button.setEnabled(False)
+        self.monitor_preview = None
+        self.monitor_status.setText(
+            f"One local display-geometry sample contains {len(self.monitor_map)} monitor(s). No screen image, process window, cloud request, or window move occurred."
+            if available
+            else "The optional screeninfo helper is not installed or no display geometry was returned. Arthur did not install anything or fall back to capture."
+        )
+
+    def preview_monitor_placement(self):
+        """Build a reviewed rectangle for a user-entered PID without moving a window or starting automation."""
+        if not self.session_unlocked:
+            QMessageBox.warning(self, "Unlock required", "Unlock the protected Spatial room before reviewing local process placement. Arthur did not inspect or move a window.")
+            return
+        monitor = self.monitor_choice.currentData()
+        if not isinstance(monitor, dict):
+            QMessageBox.warning(self, "Monitor map required", "Refresh and select a local monitor map before preparing a placement preview.")
+            return
+        process_id, accepted = QInputDialog.getInt(self, "Review process placement", "Enter one numeric Windows process ID (PID):", 0, 0, 2_147_483_647)
+        if not accepted or process_id <= 0:
+            self.monitor_status.setText("No valid process identifier was supplied; no local window was inspected or moved.")
+            return
+        try:
+            self.monitor_preview = placement_preview(process_id, monitor)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Placement preview unavailable", str(exc))
+            return
+        target = self.monitor_preview["target"]
+        self.monitor_apply_button.setEnabled(True)
+        self.monitor_status.setText(
+            f"Preview only · PID {process_id} → {self.monitor_preview['monitor_label']} at X {target['x']} / Y {target['y']} / {target['width']}×{target['height']}. No window moved; confirmation is required."
+        )
+
+    def apply_monitor_placement(self):
+        """Apply exactly one user-reviewed local move after an explicit confirmation dialog."""
+        if not self.monitor_preview:
+            QMessageBox.warning(self, "Preview required", "Prepare a local placement preview first. Arthur has not moved any window.")
+            return
+        target = self.monitor_preview["target"]
+        answer = QMessageBox.question(
+            self,
+            "Confirm local window placement",
+            f"Move the visible top-level window for PID {self.monitor_preview['process_id']} to X {target['x']} / Y {target['y']} at {target['width']}×{target['height']} on {self.monitor_preview['monitor_label']}?\n\n"
+            "Arthur will apply one local move only. It will not create a rule, run in the background, or upload desktop details.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        result = apply_approved_placement(self.monitor_preview, confirmed=answer == QMessageBox.StandardButton.Yes, mover=pywin32_mover)
+        self.monitor_status.setText(result["detail"])
+        if result["state"] == "applied":
+            self.monitor_apply_button.setEnabled(False)
 
     def move_selection(self, delta):
         if not self.session_unlocked:

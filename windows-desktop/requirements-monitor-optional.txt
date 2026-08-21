@@ -1,0 +1,4 @@
+# Optional, manually reviewed helpers for Arthur’s local monitor-map and one-time
+# confirmed placement action. Arthur does not install these packages itself.
+screeninfo>=0.8,<1
+pywin32>=306; platform_system == "Windows"
