@@ -405,3 +405,10 @@
 - [x] Add visible text-processing, speech-unit/engine, and audio-output readiness states with an explicit local or provider voice-engine selection.
 - [x] Preserve consent boundaries: do not download neural voice models, clone voices, transmit text/audio, or enable a provider route automatically.
 - [x] Add regression coverage, synchronize the desktop and browser guidance, validate the build handoff, and document how to activate speech output.
+
+## Private Repository & Spatial Workspace Architecture
+
+- [ ] Create a new private GitHub repository named `arthur`, scan the project for credentials, and push the credential-safe source with a clear release workflow for future authorized builds.
+- [ ] Produce an architecture schematic separating the contextual AI core, consent ledger, local device adapters, real-time state synchronization, and spatial UI layers.
+- [ ] Extend the browser and Windows Spatial Workspace with visible floating modules, node-graph context, and consent-gated local spatial-input readiness without enabling live microphone, camera, environment capture, or network streaming.
+- [ ] Add modular, commented spatial layout and real-time state contracts, regression coverage, and a plain-language guide for future provider or device activation.
