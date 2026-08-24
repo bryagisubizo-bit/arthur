@@ -447,5 +447,5 @@
 
 - [x] Audit the browser-preview and Windows API Vault controls to identify why provider connection states remain unavailable and test buttons provide no visible outcome.
 - [x] Implement truthful, consent-safe test actions that visibly report configured, testing, unavailable, and configuration-required states without exposing or embedding provider credentials.
-- [ ] Add regression coverage and interactive validation for provider-test feedback, then synchronize the repaired Windows source and publish a release if desktop behavior changes.
+- [x] Add regression coverage and interactive validation for provider-test feedback, then synchronize the repaired Windows source and publish a release if desktop behavior changes.
 - [x] Fix the Windows CI desktop-smoke teardown so its recurring local visualizer timer cannot keep the release workflow’s regression stage alive.
