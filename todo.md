@@ -441,4 +441,4 @@
 - [x] Fix persisted Spatial Room protection selection so `password` always routes to password creation or verification and never falls through to the optional local camera-face setup.
 - [x] Add a clear Arthur application version indicator in the desktop top header and ensure its value is sourced from one maintained release-version constant.
 - [x] Add regression coverage for installer-selected password versus face-access setup paths, including a guarantee that the password route does not check for `cv2`.
-- [ ] Synchronize the corrected desktop source, validate the Windows release workspace, and publish the verified corrected installer release.
+- [x] Synchronize the corrected desktop source, validate the Windows release workspace, and publish the verified corrected installer release.
