@@ -19,6 +19,10 @@ if errorlevel 1 goto :build_failed
 python -m pip install -r requirements.txt
 if errorlevel 1 goto :build_failed
 
+echo Preparing bundled local runtime assets and openWakeWord models ...
+python prepare_runtime_assets.py
+if errorlevel 1 goto :build_failed
+
 for %%F in (test_*.py) do (
   echo Running %%F ...
   python "%%F"

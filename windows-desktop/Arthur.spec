@@ -1,19 +1,24 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
+from pathlib import Path
+
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 
 openwakeword_datas = collect_data_files("openwakeword")
 openwakeword_hiddenimports = collect_submodules("openwakeword") + ["onnxruntime", "sounddevice"]
+runtime_datas = [("assets/arthur_hawk.svg", "assets"), ("assets/arthur_hawk.ico", "assets"), ("assets/arthur_hawk.png", "assets")] + openwakeword_datas
+if Path("runtime_manifest.json").is_file():
+    runtime_datas.append(("runtime_manifest.json", "."))
 
 
 a = Analysis(
     ['app.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets/arthur_hawk.svg', 'assets'), ('assets/arthur_hawk.ico', 'assets')] + openwakeword_datas,
-    hiddenimports=openwakeword_hiddenimports,
+    datas=runtime_datas,
+    hiddenimports=openwakeword_hiddenimports + ["cv2", "pyttsx3.drivers.sapi5"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

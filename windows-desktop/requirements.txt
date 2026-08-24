@@ -6,3 +6,4 @@ sounddevice>=0.5,<1
 pyttsx3>=2.90,<3
 psutil>=6,<7
 Pillow>=10,<12
+opencv-python>=4.10,<5

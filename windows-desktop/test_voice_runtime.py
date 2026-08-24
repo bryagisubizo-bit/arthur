@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from openwakeword_service import WakeWordListener
 from voice_runtime import DiagnosticResult, VoiceRuntime, available_input_devices, diagnose_wake_word, microphone_readiness, test_microphone_activity
 
 
@@ -78,6 +79,14 @@ class VoiceRuntimeTests(unittest.TestCase):
         with patch.dict("sys.modules", {"sounddevice": sounddevice}):
             devices = available_input_devices()
         self.assertEqual(devices, [(1, "Headset microphone")])
+
+    def test_listener_suspends_predictions_only_until_the_requested_time(self):
+        listener = WakeWordListener()
+        with patch("openwakeword_service.monotonic", side_effect=[10.0, 11.0, 14.5]):
+            listener.suspend_detection(4.0)
+            self.assertEqual(listener._suspended_until, 14.0)
+            self.assertGreater(listener._suspended_until, 11.0)
+            self.assertLess(listener._suspended_until, 14.5)
 
 
 if __name__ == "__main__":

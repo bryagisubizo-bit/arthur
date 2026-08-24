@@ -47,6 +47,8 @@ from coordinate_layout import coordinate_snapshot, zone_members
 from monitor_workspace import apply_approved_placement, discover_monitors, placement_preview, pywin32_mover, resource_budget
 from cloud_gateway import gateway_status as cloud_gateway_status, review_text as cloud_gateway_review_text
 from application_bridge import action_readiness as app_bridge_action_readiness, approve_scope as approve_app_scope, bridge_status as app_bridge_status, create_scope as create_app_scope, emergency_stop as app_bridge_emergency_stop, optional_dependency_status as app_bridge_dependency_status, prepare_navigation_plan as prepare_app_navigation_plan
+from api_layer import API_LAYER_ROOM, api_layer_status
+from runtime_assets import packaged_runtime_readiness
 from voice_runtime import VoiceRuntime, available_input_devices, diagnose_wake_word, microphone_readiness, test_microphone_activity
 from voice_synthesis import ROUTES as VOICE_SYNTHESIS_ROUTES, describe_route as describe_synthesis_route
 from windows_hello import availability as windows_hello_availability, verify as verify_windows_hello
@@ -254,6 +256,7 @@ DEFAULT_PROVIDER_SELECTIONS = {
 }
 
 PROVIDER_OPTIONS = {
+    API_LAYER_ROOM: ["Select provider", "OpenAI", "OpenAI-compatible API", "Custom HTTPS API", "Custom MCP / HTTP"],
     "Main AI / Conversation": ["Select provider", "OpenAI", "Anthropic", "Google Gemini", "Custom OpenAI-compatible"],
     "Speech-to-Text": ["Select provider", "OpenAI Audio", "Google Cloud Speech", "Azure Speech", "Local Whisper", "Custom"],
     "Text-to-Speech": ["Select provider", "OpenAI TTS", "ElevenLabs", "Azure Speech", "Google Cloud TTS", "Windows Voice", "Custom"],
@@ -699,6 +702,13 @@ class IntegrationCard(QFrame):
         row.addWidget(self.model)
         layout.addLayout(row)
 
+        self.use_api_layer = None
+        if label != API_LAYER_ROOM:
+            self.use_api_layer = QCheckBox("Use the shared API Layer endpoint and credential for this room")
+            self.use_api_layer.setChecked(bool(saved.get("use_api_layer", False)))
+            self.use_api_layer.setToolTip("The key remains stored only under API Layer in Windows Credential Manager.")
+            layout.addWidget(self.use_api_layer)
+
         self.local_discovery = None
         if label == "Smart Home":
             self.local_discovery = QCheckBox("Permit a separate review of local device discovery settings — no discovery or control is started")
@@ -727,6 +737,9 @@ class IntegrationCard(QFrame):
         self.provider.currentTextChanged.connect(self.mark_dirty)
         self.provider.currentTextChanged.connect(self.refresh_provider_details)
         self.api_key.textChanged.connect(self.mark_dirty)
+        if self.use_api_layer is not None:
+            self.use_api_layer.toggled.connect(self.mark_dirty)
+            self.use_api_layer.toggled.connect(lambda _checked: self.refresh_provider_details())
         if self.local_discovery is not None:
             self.local_discovery.toggled.connect(self.mark_dirty)
         self.refresh_provider_details()
@@ -734,6 +747,11 @@ class IntegrationCard(QFrame):
 
     def refresh_provider_details(self):
         provider = self.provider.currentText()
+        if self.use_api_layer is not None and self.use_api_layer.isChecked():
+            self.website_status.setText("This room will resolve through the saved API Layer. Configure and test the shared room separately; no key is copied into this room.")
+            self.provider_website_button.setEnabled(False)
+            self.live_test.setEnabled(False)
+            return
         website = PROVIDER_WEBSITES.get(provider)
         if provider == "Select provider":
             self.website_status.setText("Choose a provider to view its setup website. Arthur is not connected.")
@@ -756,6 +774,7 @@ class IntegrationCard(QFrame):
             "saved_locally": ("Saved locally — not tested", "statusWarn"),
             "adapter_ready": ("Adapter ready — not tested", "statusWarn"),
             "adapter_unavailable": ("No live-test adapter", "statusWarn"),
+            "shared_layer": ("Uses shared API Layer", "statusWarn"),
             "test_passed": ("Last approved test passed", "statusOn"),
             "test_failed": ("Last approved test failed", "statusOff"),
         }
@@ -789,7 +808,15 @@ class IntegrationCard(QFrame):
         }
         if self.local_discovery is not None:
             data["local_discovery_review_enabled"] = self.local_discovery.isChecked()
+        if self.use_api_layer is not None:
+            data["use_api_layer"] = self.use_api_layer.isChecked()
         return data
+
+    def uses_shared_api_layer(self):
+        return self.use_api_layer is not None and self.use_api_layer.isChecked()
+
+    def requires_direct_api_key(self, provider):
+        return not self.uses_shared_api_layer() and provider not in {"Local Whisper", "Windows Voice", "Local detector", "Local music files", "Local singing model", "Disabled", "Home Assistant"}
 
     def mark_dirty(self):
         self.status.setText("Unsaved")
@@ -803,13 +830,13 @@ class IntegrationCard(QFrame):
         if data["provider"] == "Select provider":
             QMessageBox.warning(self, "Provider required", f"Choose a provider for {self.label}.")
             return
-        if not secret and data["provider"] not in {"Local Whisper", "Windows Voice", "Local detector", "Local music files", "Local singing model", "Disabled", "Home Assistant"}:
+        if not secret and self.requires_direct_api_key(data["provider"]):
             QMessageBox.warning(self, "API key required", f"Enter the developer API key for {self.label}.")
             return
         if secret and not set_secret(self.label, secret):
             QMessageBox.warning(self, "Secure storage unavailable", "Arthur could not access the operating-system credential store. The key was not written to disk.")
             return
-        self.connection_state = setup_state(data["provider"], bool(secret))
+        self.connection_state = "shared_layer" if self.uses_shared_api_layer() else setup_state(data["provider"], bool(secret))
         self.refresh_connection_status()
         self.changed.emit(self.payload())
 
@@ -819,8 +846,14 @@ class IntegrationCard(QFrame):
         if data["provider"] == "Select provider":
             QMessageBox.warning(self, "Provider required", f"Choose a provider for {self.label} first.")
             return
-        if not secret and data["provider"] not in {"Local Whisper", "Windows Voice", "Local detector", "Local music files", "Local singing model", "Disabled", "Home Assistant"}:
+        if not secret and self.requires_direct_api_key(data["provider"]):
             QMessageBox.warning(self, "API key required", "Enter a developer key before testing this provider.")
+            return
+        if self.uses_shared_api_layer():
+            self.connection_state = "shared_layer"
+            self.refresh_connection_status()
+            self.changed.emit(self.payload())
+            QMessageBox.information(self, "Shared API Layer selected", f"{self.label} will use the shared API Layer after that room is configured and enabled. Arthur did not contact any provider.")
             return
         if self.label == "Defensive security & compliance":
             QMessageBox.information(
@@ -840,6 +873,9 @@ class IntegrationCard(QFrame):
         data = self.payload()
         if data["provider"] == "Select provider":
             QMessageBox.warning(self, "Provider required", f"Choose a provider for {self.label} first.")
+            return
+        if self.uses_shared_api_layer():
+            QMessageBox.information(self, "Shared API Layer", "This room inherits the shared API Layer. Save or test that room separately; Arthur will not duplicate its credential into this room.")
             return
         if QMessageBox.question(
             self,
@@ -950,6 +986,10 @@ class Dashboard(QWidget):
         self.focus_cue = QLabel("LOCAL CONTEXT • Standby • Visual results remain gated by your preference")
         self.focus_cue.setObjectName("focusCue")
         hero_layout.addWidget(self.focus_cue)
+        self.api_layer_indicator = QLabel()
+        self.api_layer_indicator.setWordWrap(True)
+        hero_layout.addWidget(self.api_layer_indicator)
+        self.refresh_api_layer_status()
         layout.addWidget(hero)
 
         metrics = QGridLayout()
@@ -982,6 +1022,18 @@ class Dashboard(QWidget):
         self.timer.timeout.connect(self.update_metrics)
         self.timer.start(1500)
         self.update_metrics()
+
+    def refresh_api_layer_status(self):
+        status = api_layer_status(self.config)
+        if status.ready:
+            rooms = ", ".join(status.shared_rooms) if status.shared_rooms else "no rooms selected yet"
+            self.api_layer_indicator.setText(f"API LAYER • READY • {status.provider} • Shared with: {rooms}")
+            self.api_layer_indicator.setObjectName("statusOn")
+        else:
+            self.api_layer_indicator.setText("API LAYER • STANDBY • Configure the API Layer room in API Vault to share a saved provider connection across approved features.")
+            self.api_layer_indicator.setObjectName("muted")
+        self.api_layer_indicator.style().unpolish(self.api_layer_indicator)
+        self.api_layer_indicator.style().polish(self.api_layer_indicator)
 
     def metric_card(self, label, value, detail):
         card = QFrame()
@@ -2424,6 +2476,7 @@ class VoiceSignalPage(QWidget):
 class VoiceStudioPage(QWidget):
     wake_word_detected = Signal(str)
     audio_level = Signal(float)
+    wake_word_listener_error = Signal(str)
 
     def __init__(self, config, save_callback, voice_runtime, theme_callback, parent=None):
         super().__init__(parent)
@@ -2433,6 +2486,7 @@ class VoiceStudioPage(QWidget):
         self.theme_callback = theme_callback
         self.listener = None
         self.wake_word_detected.connect(self.on_wake_word_detected)
+        self.wake_word_listener_error.connect(self.on_listener_error)
         layout = QVBoxLayout(self)
         layout.setSpacing(16)
         layout.addWidget(workspace_heading("Voice studio", "Test local speech, inspect wake-word readiness, and explicitly choose whether Arthur may listen."))
@@ -2567,6 +2621,11 @@ class VoiceStudioPage(QWidget):
         self.synthesis_route_status.setObjectName("muted")
         self.synthesis_route_status.setWordWrap(True)
         diagnostic_layout.addRow("Spoken replies:", self.synthesis_route_status)
+        self.packaged_runtime_status = QLabel()
+        self.packaged_runtime_status.setObjectName("muted")
+        self.packaged_runtime_status.setWordWrap(True)
+        diagnostic_layout.addRow("Packaged runtime:", self.packaged_runtime_status)
+        self.refresh_packaged_runtime_status()
         self.microphone = QComboBox()
         self.refresh_microphone_devices()
         microphone_row = QHBoxLayout()
@@ -2690,6 +2749,11 @@ class VoiceStudioPage(QWidget):
         self.status.setText(f"{result.headline}. {result.detail}")
         return result
 
+    def refresh_packaged_runtime_status(self):
+        readiness = packaged_runtime_readiness()
+        self.packaged_runtime_status.setText(readiness.detail)
+        return readiness
+
     def refresh_microphone_devices(self):
         saved = self.config.get("voice", {}).get("input_device")
         self.microphone.clear()
@@ -2741,20 +2805,41 @@ class VoiceStudioPage(QWidget):
         )
         if consent != QMessageBox.StandardButton.Yes:
             return
+        self.start_listener_from_saved_consent()
+
+    def start_listener_from_saved_consent(self):
+        """Start only after the user explicitly enabled this local listener previously."""
+        if self.listener is not None and self.listener.running:
+            return True
         try:
             self.listener = WakeWordListener(model_path=self.model_path.text(), wake_word=self.config.get("profile", {}).get("wake_word", "Arthur"), input_device=self.selected_microphone())
             self.listener.on_detected = self.wake_word_detected.emit
             self.listener.on_audio_level = self.audio_level.emit
+            self.listener.on_error = self.wake_word_listener_error.emit
             self.listener.start()
             self.config.setdefault("voice", {})["wake_word_listener_approved"] = True
             self.config.setdefault("privacy", {})["wake_word_background_enabled"] = True
             self.listener_button.setText("Stop local wake-word listener")
             self.status.setText("Listening locally. Say Arthur near the selected microphone. Use Stop at any time to pause it.")
             self.save_callback()
+            return True
         except Exception as exc:
             self.listener = None
             self.status.setText(f"Wake-word listener could not start: {exc}")
-            QMessageBox.warning(self, "Wake-word listener unavailable", str(exc))
+            return False
+
+    def resume_listener_after_startup(self):
+        """Restore a listener only when this user previously granted local-listening consent."""
+        voice = self.config.get("voice", {})
+        privacy = self.config.get("privacy", {})
+        if not voice.get("wake_word_listener_approved", False) or not privacy.get("wake_word_background_enabled", False):
+            return False
+        wake_word = diagnose_wake_word(self.model_path.text())
+        microphone = microphone_readiness(device=self.selected_microphone())
+        if not wake_word.ready or not microphone.ready:
+            self.status.setText(f"Wake-word listener was not restored. {wake_word.detail if not wake_word.ready else microphone.detail}")
+            return False
+        return self.start_listener_from_saved_consent()
 
     def on_wake_word_detected(self, wake_word):
         route_id = str(self.config.get("voice", {}).get("speech_recognition_route", ""))
@@ -2765,8 +2850,14 @@ class VoiceStudioPage(QWidget):
             if greeting_is_quiet(self.config):
                 self.status.setText("Wake word detected. Local Do Not Disturb is active, so Arthur will wait silently for your reviewed command.")
                 return
+            if self.listener is not None:
+                self.listener.suspend_detection(4.0)
             self.apply_voice_preferences()
             self.voice_runtime.speak(render_greeting_script(self.config, "wake"))
+
+    def on_listener_error(self, detail):
+        if self.listener is not None and self.listener.running:
+            self.status.setText(f"Wake-word listener remains active, but audio needs attention: {detail}")
 
     def stop_listener(self):
         if self.listener is not None:
@@ -4071,10 +4162,14 @@ class MainWindow(QMainWindow):
         self.voice_studio = None
         self.setWindowTitle(f"Arthur v{APP_VERSION} — Desktop AI Assistant")
         self.setWindowIcon(QIcon(str(bundled_path("assets/arthur_hawk.ico"))))
-        self.setMinimumSize(1240, 800)
+        # Keep the visual language of the preview while allowing narrower laptop
+        # windows to rely on the workspace and API Vault scroll areas instead of
+        # clipping content below a fixed 1240×800 minimum.
+        self.setMinimumSize(980, 640)
         self.build_ui()
         self.apply_appearance(self.config.get("appearance", {}))
         self.build_tray()
+        QTimer.singleShot(900, self.restore_local_listener_after_startup)
         if not self.config.get("setup_complete") or not self.config.get("profile", {}).get("native_language") or not self.config.get("voice", {}).get("speech_recognition_route") or not self.config.get("voice", {}).get("voice_synthesis_route"):
             QTimer.singleShot(250, self.show_first_run)
         elif self.config.get("privacy", {}).get("spoken_only", True) and self.config.get("voice", {}).get("arrival_greeting_enabled", False):
@@ -4189,6 +4284,8 @@ class MainWindow(QMainWindow):
         # Other rooms retain conventional vertical scrolling and never expose a
         # horizontal workspace scrollbar that could be mistaken for navigation.
         self.page_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.page_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.page_scroll.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
         self.page_scroll.setObjectName("workspaceScroll")
         self.page_scroll.setWidget(self.pages)
         content_layout.addWidget(self.page_scroll, 1)
@@ -4211,6 +4308,10 @@ class MainWindow(QMainWindow):
         note.setWordWrap(True)
         note.setObjectName("muted")
         outer.addWidget(note)
+        self.api_layer_summary = QLabel()
+        self.api_layer_summary.setObjectName("commandResult")
+        self.api_layer_summary.setWordWrap(True)
+        outer.addWidget(self.api_layer_summary)
         defensive_gate = QGroupBox("Defensive intelligence lookup gate")
         defensive_layout = QVBoxLayout(defensive_gate)
         self.defensive_lookup_enabled = QCheckBox("Enable passive defensive context lookups only")
@@ -4229,6 +4330,11 @@ class MainWindow(QMainWindow):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+        scroll.setObjectName("apiVaultScroll")
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setFocusPolicy(Qt.FocusPolicy.WheelFocus)
+        scroll.setMinimumHeight(320)
         container = QWidget()
         grid = QGridLayout(container)
         self.integration_grid = grid
@@ -4242,7 +4348,9 @@ class MainWindow(QMainWindow):
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
         scroll.setWidget(container)
+        self.integration_scroll = scroll
         outer.addWidget(scroll, 1)
+        self.refresh_api_layer_summary()
         return page
 
     def add_custom_integration(self):
@@ -4261,16 +4369,29 @@ class MainWindow(QMainWindow):
         self.integration_grid.addWidget(card, index // 2, index % 2)
         self.config["integrations"][label] = saved
         save_config(self.config)
+        self.refresh_api_layer_summary()
 
     def integration_changed(self, name, data):
         self.config["integrations"][name] = data
         save_config(self.config)
+        self.refresh_api_layer_summary()
+        self.dashboard.refresh_api_layer_status()
 
     def save_integrations(self):
         for name, card in self.cards.items():
             self.config["integrations"][name] = card.payload()
         save_config(self.config)
+        self.refresh_api_layer_summary()
+        self.dashboard.refresh_api_layer_status()
         QMessageBox.information(self, "Integrations saved", "Developer integration settings have been saved.")
+
+    def refresh_api_layer_summary(self):
+        status = api_layer_status(self.config)
+        if status.ready:
+            rooms = ", ".join(status.shared_rooms) if status.shared_rooms else "No rooms inherit it yet."
+            self.api_layer_summary.setText(f"SHARED API LAYER READY\nProvider: {status.provider}\nShared rooms: {rooms}\n{status.detail}")
+        else:
+            self.api_layer_summary.setText(f"SHARED API LAYER STANDBY\n{status.detail}")
 
     def set_defensive_lookup_enabled(self, enabled):
         self.config.setdefault("security", {})["defensive_lookup_enabled"] = enabled
@@ -4289,6 +4410,7 @@ class MainWindow(QMainWindow):
                 return
             self.pages.setCurrentIndex(index)
             self.workspace_title.setText(self.nav_labels[index])
+            self.page_scroll.verticalScrollBar().setValue(0)
 
     def open_spatial_room(self):
         """Open the protected room after an explicit command review and local verification."""
@@ -4348,6 +4470,21 @@ class MainWindow(QMainWindow):
         result = self.voice_runtime.speak(render_greeting_script(self.config, "opening"))
         if result.ready:
             self.dashboard.output.append("Arthur: Optional local arrival greeting delivered.")
+
+    def restore_local_listener_after_startup(self):
+        """Run after the optional greeting so its speech cannot race microphone setup."""
+        ready = self.voice_studio.refresh_packaged_runtime_status()
+        restored = self.voice_studio.resume_listener_after_startup() if ready.ready else False
+        if restored:
+            self.dashboard.listening.setText("● LISTENING LOCALLY")
+            self.dashboard.listening.setObjectName("statusOn")
+            self.dashboard.output.append("Arthur: Restored the previously approved local wake-word listener after startup readiness checks.")
+        elif self.config.get("voice", {}).get("wake_word_listener_approved", False):
+            self.dashboard.listening.setText("● LISTENER NEEDS ATTENTION")
+            self.dashboard.listening.setObjectName("statusWarn")
+            self.dashboard.output.append("Arthur: The previously approved local listener was not restored. Open Voice studio to review the packaged runtime, selected model, and microphone status.")
+        self.dashboard.listening.style().unpolish(self.dashboard.listening)
+        self.dashboard.listening.style().polish(self.dashboard.listening)
 
     def play_first_interaction_introduction(self):
         """Introduce Arthur after completed setup without activating the microphone or any provider."""
@@ -4479,7 +4616,7 @@ def apply_theme(app, appearance=None):
         #statusOn {{ color: #70e6a6; font-weight: 700; }}
         #statusOff {{ color: #7b94aa; }}
         #statusWarn {{ color: #ffc76b; font-weight: 700; }}
-        QScrollArea, #workspaceScroll {{ border: none; background: transparent; }}
+        QScrollArea, #workspaceScroll, #apiVaultScroll {{ border: none; background: transparent; }}
         QScrollBar:vertical {{ background: #07111f; width: 10px; margin: 0; }}
         QScrollBar::handle:vertical {{ background: #234a70; min-height: 30px; border-radius: 5px; }}
     """)
@@ -4488,6 +4625,7 @@ def apply_theme(app, appearance=None):
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
+    app.setStyle("Fusion")
     app.setFont(QFont("Segoe UI", 10))
     apply_theme(app)
     window = MainWindow()
