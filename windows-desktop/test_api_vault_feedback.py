@@ -1,5 +1,9 @@
 """Regression checks for persistent, truthful API Vault status feedback."""
 
+import os
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
 from PySide6.QtWidgets import QApplication
 
 from app import IntegrationCard

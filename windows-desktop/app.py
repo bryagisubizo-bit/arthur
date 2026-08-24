@@ -96,7 +96,7 @@ from PySide6.QtWidgets import (
 
 APP_NAME = "Arthur"
 APP_PUBLISHER = "Bogitech"
-APP_VERSION = "0.1.7"
+APP_VERSION = "0.1.8"
 BASE_DIR = Path(__file__).resolve().parent
 # An installed application cannot rely on write access to Program Files.  Keep
 # user settings and the installer consent record in the current user's AppData.

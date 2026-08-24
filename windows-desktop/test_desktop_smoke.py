@@ -15,7 +15,7 @@ source_path = Path(__file__).with_name("app.py")
 compile(source_path.read_text(encoding="utf-8"), str(source_path), "exec")
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QTimer, Qt
 
 from app import APP_VERSION, DEFAULT_CONFIG, CommandPlanner, FirstRunDialog, FirstRunTutorialDialog, MainWindow, PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER, PROVIDER_OPTIONS, SPEECH_RECOGNITION_ROUTE_PLACEHOLDER, VOICE_SYNTHESIS_ROUTE_PLACEHOLDER, is_time_in_window, profile_language_choices, render_greeting_script
 
@@ -37,7 +37,7 @@ def main():
 
     application = QApplication.instance() or QApplication([])
     window = MainWindow()
-    assert APP_VERSION == "0.1.7"
+    assert APP_VERSION == "0.1.8"
     assert window.version_label.text() == f"VERSION {APP_VERSION}"
     assert f"v{APP_VERSION}" in window.windowTitle()
     assert window.nav_list.count() == 16
@@ -165,8 +165,12 @@ def main():
     tutorial = FirstRunTutorialDialog(window)
     assert tutorial.windowTitle() == "Arthur — first-run tutorial"
     tutorial.close()
+    active_timers = window.findChildren(QTimer)
+    assert any(timer.isActive() for timer in active_timers)
+    for timer in active_timers:
+        timer.stop()
+    assert not any(timer.isActive() for timer in active_timers)
     window.close()
-    application.processEvents()
     print("Arthur desktop smoke checks passed.")
 
 
