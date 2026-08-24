@@ -66,7 +66,7 @@ Arthur never sends raw user or LLM-generated text to a shell. It does not suppor
 
 ## Build the installer
 
-Install [Inno Setup](https://jrsoftware.org/isinfo.php) before running `build_windows.bat`. The script detects Inno Setup 7 or 6 and creates `installer\output\ArthurSetup-0.1.6.exe` after the PyInstaller build succeeds. If the compiler cannot be detected, open `installer\ArthurSetup.iss` and click **Compile** instead. Do not compile the installer before `dist\Arthur\Arthur.exe` exists; the installer displays a direct recovery message if the PyInstaller payload is missing.
+Install [Inno Setup](https://jrsoftware.org/isinfo.php) before running `build_windows.bat`. The script detects Inno Setup 7 or 6 and creates `installer\output\ArthurSetup-0.1.7.exe` after the PyInstaller build succeeds. If the compiler cannot be detected, open `installer\ArthurSetup.iss` and click **Compile** instead. Do not compile the installer before `dist\Arthur\Arthur.exe` exists; the installer displays a direct recovery message if the PyInstaller payload is missing.
 
 Before public distribution, add a code-signing certificate, replace the prototype local secret storage, and connect the selected providers through a backend or secure credential store.
 

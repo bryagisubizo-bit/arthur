@@ -60,7 +60,7 @@ The PyInstaller result is `dist/Arthur/Arthur.exe`.
 
 Open `installer/ArthurSetup.iss` in **Inno Setup Compiler** and choose **Build → Compile**. The script expects the PyInstaller payload at `../dist/Arthur/*` relative to the `installer` folder.
 
-The resulting installer is normally written to `installer/output/ArthurSetup-0.1.6.exe`.
+The resulting installer is normally written to `installer/output/ArthurSetup-0.1.7.exe`.
 
 If Inno Setup reports “No files found matching `dist/Arthur/*`,” run the PyInstaller build first and confirm that `dist/Arthur/Arthur.exe` exists.
 

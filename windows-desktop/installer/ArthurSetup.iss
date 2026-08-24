@@ -1,6 +1,6 @@
 #define MyAppName "Arthur"
 #ifndef MyAppVersion
-#define MyAppVersion "0.1.6"
+#define MyAppVersion "0.1.7"
 #endif
 #define MyAppPublisher "Bogitech"
 #define MyAppExeName "Arthur.exe"

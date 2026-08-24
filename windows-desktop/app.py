@@ -54,7 +54,7 @@ from release_check_loading import release_check_loading_text
 from voice_runtime import VoiceRuntime, available_input_devices, diagnose_wake_word, microphone_readiness, test_microphone_activity
 from voice_synthesis import ROUTES as VOICE_SYNTHESIS_ROUTES, describe_route as describe_synthesis_route
 from windows_hello import availability as windows_hello_availability, verify as verify_windows_hello
-from provider_connection import run_approved_connection_test, setup_state
+from provider_connection import approved_test_providers, run_approved_connection_test, setup_state
 from installer_consent import apply_installer_defaults, load_installer_consent
 from system_sensors import collect_snapshot
 from PySide6.QtGui import QAction, QDesktopServices, QFont, QIcon, QPixmap
@@ -96,7 +96,7 @@ from PySide6.QtWidgets import (
 
 APP_NAME = "Arthur"
 APP_PUBLISHER = "Bogitech"
-APP_VERSION = "0.1.6"
+APP_VERSION = "0.1.7"
 BASE_DIR = Path(__file__).resolve().parent
 # An installed application cannot rely on write access to Program Files.  Keep
 # user settings and the installer consent record in the current user's AppData.
@@ -653,6 +653,7 @@ class IntegrationCard(QFrame):
         saved = saved or {}
         self.connection_state = saved.get("connection_state", "unconnected")
         self.last_connection_test = saved.get("last_connection_test", "")
+        self.last_connection_detail = saved.get("last_connection_detail", "")
         self.setObjectName("integrationCard")
         layout = QVBoxLayout(self)
         header = QHBoxLayout()
@@ -664,6 +665,10 @@ class IntegrationCard(QFrame):
         header.addStretch()
         header.addWidget(self.status)
         layout.addLayout(header)
+        self.connection_detail = QLabel()
+        self.connection_detail.setObjectName("muted")
+        self.connection_detail.setWordWrap(True)
+        layout.addWidget(self.connection_detail)
 
         self.provider = QComboBox()
         self.provider.addItems(providers)
@@ -763,7 +768,7 @@ class IntegrationCard(QFrame):
         if website:
             self.website_status.setText(f"Official setup website available. Arthur is not connected until you save settings and explicitly approve a live test.")
             self.provider_website_button.setEnabled(True)
-            self.live_test.setEnabled(provider == "OpenAI")
+            self.live_test.setEnabled(provider in approved_test_providers())
             return
         self.website_status.setText("No official website is listed for this local or custom option. Status: not connected.")
         self.provider_website_button.setEnabled(False)
@@ -785,6 +790,20 @@ class IntegrationCard(QFrame):
         self.status.setObjectName(object_name)
         self.status.style().unpolish(self.status)
         self.status.style().polish(self.status)
+        details = {
+            "unconnected": "Choose a provider, then save its local setup before any connection test can run.",
+            "key_required": "This provider needs a developer API key. Arthur has not contacted it.",
+            "saved_locally": "Settings are saved locally only. No provider request has been made.",
+            "adapter_ready": "A reviewed test is available. Select Run approved live test to make one read-only request.",
+            "adapter_unavailable": "Settings may be saved, but this provider has no reviewed live-test adapter. It is not connected.",
+            "shared_layer": "This room inherits the separately configured shared API Layer. Arthur has not contacted a provider from this room.",
+            "test_passed": "The last approved read-only test passed. This does not enable automatic actions or data sharing.",
+            "test_failed": "The last approved test did not pass. Arthur will not treat this provider as connected.",
+        }
+        detail = self.last_connection_detail or details.get(self.connection_state, details["unconnected"])
+        if self.last_connection_test:
+            detail = f"{detail} Last test: {self.last_connection_test}."
+        self.connection_detail.setText(detail)
 
     def open_provider_website(self):
         provider = self.provider.currentText()
@@ -807,6 +826,7 @@ class IntegrationCard(QFrame):
             "enabled": self.enabled.isChecked(),
             "connection_state": self.connection_state,
             "last_connection_test": self.last_connection_test,
+            "last_connection_detail": self.last_connection_detail,
         }
         if self.local_discovery is not None:
             data["local_discovery_review_enabled"] = self.local_discovery.isChecked()
@@ -825,6 +845,7 @@ class IntegrationCard(QFrame):
         self.status.setObjectName("statusWarn")
         self.status.style().unpolish(self.status)
         self.status.style().polish(self.status)
+        self.connection_detail.setText("Selection changed. Save or check the setup again before relying on this provider.")
 
     def save_card(self):
         data = self.payload()
@@ -839,6 +860,8 @@ class IntegrationCard(QFrame):
             QMessageBox.warning(self, "Secure storage unavailable", "Arthur could not access the operating-system credential store. The key was not written to disk.")
             return
         self.connection_state = "shared_layer" if self.uses_shared_api_layer() else setup_state(data["provider"], bool(secret))
+        self.last_connection_test = ""
+        self.last_connection_detail = "Saved in the local operating-system credential store. Arthur has not contacted the provider."
         self.refresh_connection_status()
         self.changed.emit(self.payload())
 
@@ -853,6 +876,8 @@ class IntegrationCard(QFrame):
             return
         if self.uses_shared_api_layer():
             self.connection_state = "shared_layer"
+            self.last_connection_test = ""
+            self.last_connection_detail = "This room inherits the shared API Layer. Arthur did not contact any provider."
             self.refresh_connection_status()
             self.changed.emit(self.payload())
             QMessageBox.information(self, "Shared API Layer selected", f"{self.label} will use the shared API Layer after that room is configured and enabled. Arthur did not contact any provider.")
@@ -866,6 +891,8 @@ class IntegrationCard(QFrame):
             )
             return
         self.connection_state = setup_state(data["provider"], bool(secret))
+        self.last_connection_test = ""
+        self.last_connection_detail = "Arthur reviewed the local setup only. No provider request was made."
         self.refresh_connection_status()
         data = self.payload()
         self.changed.emit(data)
@@ -879,17 +906,27 @@ class IntegrationCard(QFrame):
         if self.uses_shared_api_layer():
             QMessageBox.information(self, "Shared API Layer", "This room inherits the shared API Layer. Save or test that room separately; Arthur will not duplicate its credential into this room.")
             return
+        saved_secret = get_secret(self.label)
+        if not saved_secret:
+            self.connection_state = "key_required"
+            self.last_connection_test = ""
+            self.last_connection_detail = "Save the developer key in the operating-system credential store before approving a live test. Arthur has not contacted the provider."
+            self.refresh_connection_status()
+            self.changed.emit(self.payload())
+            QMessageBox.information(self, "Save required", "Save this provider’s key locally before running a live test. Arthur has not contacted the provider.")
+            return
         if QMessageBox.question(
             self,
             "Approve live connection test?",
-            f"Arthur will send one HTTPS request to the official {data['provider']} API using the key currently entered in this card. No prompt, personal data, audio, or file will be sent. Continue?",
+            f"Arthur will send one HTTPS request to the official {data['provider']} API using the key already saved for this card in the operating-system credential store. No prompt, personal data, audio, or file will be sent. Continue?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         ) != QMessageBox.StandardButton.Yes:
             return
-        result = run_approved_connection_test(data["provider"], self.secret_value())
+        result = run_approved_connection_test(data["provider"], saved_secret)
         self.connection_state = result.state
         self.last_connection_test = datetime.now().isoformat(timespec="seconds")
+        self.last_connection_detail = result.detail
         self.refresh_connection_status()
         self.changed.emit(self.payload())
         title = "Connection test passed" if result.state == "test_passed" else "Connection test did not pass"

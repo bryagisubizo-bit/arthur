@@ -442,3 +442,9 @@
 - [x] Add a clear Arthur application version indicator in the desktop top header and ensure its value is sourced from one maintained release-version constant.
 - [x] Add regression coverage for installer-selected password versus face-access setup paths, including a guarantee that the password route does not check for `cv2`.
 - [x] Synchronize the corrected desktop source, validate the Windows release workspace, and publish the verified corrected installer release.
+
+## API Vault Connection & Test-State Repair
+
+- [x] Audit the browser-preview and Windows API Vault controls to identify why provider connection states remain unavailable and test buttons provide no visible outcome.
+- [x] Implement truthful, consent-safe test actions that visibly report configured, testing, unavailable, and configuration-required states without exposing or embedding provider credentials.
+- [ ] Add regression coverage and interactive validation for provider-test feedback, then synchronize the repaired Windows source and publish a release if desktop behavior changes.

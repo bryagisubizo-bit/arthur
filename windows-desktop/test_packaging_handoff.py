@@ -24,13 +24,13 @@ class PackagingHandoffTests(unittest.TestCase):
         self.assertIn("python -m PyInstaller --noconfirm --clean Arthur.spec", script)
         self.assertIn("ISCC.exe", script)
         self.assertIn("Inno Setup 7\\ISCC.exe", script)
-        self.assertIn("installer\\output\\ArthurSetup-0.1.6.exe", script)
+        self.assertIn("installer\\output\\ArthurSetup-0.1.7.exe", script)
 
     def test_installer_points_at_the_pyinstaller_payload(self) -> None:
         installer = (ROOT / "installer" / "ArthurSetup.iss").read_text(encoding="utf-8")
         self.assertIn('Source: "..\\dist\\Arthur\\*"', installer)
         self.assertIn('#ifndef MyAppVersion', installer)
-        self.assertIn('#define MyAppVersion "0.1.6"', installer)
+        self.assertIn('#define MyAppVersion "0.1.7"', installer)
         self.assertIn('#endif', installer)
         self.assertIn("OutputBaseFilename=ArthurSetup-{#MyAppVersion}", installer)
         self.assertIn('Filename: "{app}\\Arthur.exe"', installer)

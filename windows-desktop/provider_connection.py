@@ -20,7 +20,27 @@ _APPROVED_TESTS = {
         "url": "https://api.openai.com/v1/models",
         "headers": lambda api_key: {"Authorization": f"Bearer {api_key}"},
     },
+    "OpenAI Audio": {
+        "url": "https://api.openai.com/v1/models",
+        "headers": lambda api_key: {"Authorization": f"Bearer {api_key}"},
+    },
+    "OpenAI TTS": {
+        "url": "https://api.openai.com/v1/models",
+        "headers": lambda api_key: {"Authorization": f"Bearer {api_key}"},
+    },
+    "Anthropic": {
+        "url": "https://api.anthropic.com/v1/models?limit=1",
+        "headers": lambda api_key: {
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+        },
+    },
 }
+
+
+def approved_test_providers() -> frozenset[str]:
+    """Return providers with a reviewed, read-only connection check."""
+    return frozenset(_APPROVED_TESTS)
 
 
 def setup_state(provider: str, api_key_present: bool) -> str:

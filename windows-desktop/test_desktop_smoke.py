@@ -37,7 +37,7 @@ def main():
 
     application = QApplication.instance() or QApplication([])
     window = MainWindow()
-    assert APP_VERSION == "0.1.6"
+    assert APP_VERSION == "0.1.7"
     assert window.version_label.text() == f"VERSION {APP_VERSION}"
     assert f"v{APP_VERSION}" in window.windowTitle()
     assert window.nav_list.count() == 16
