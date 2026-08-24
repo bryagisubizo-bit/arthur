@@ -17,7 +17,7 @@ compile(source_path.read_text(encoding="utf-8"), str(source_path), "exec")
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 
-from app import DEFAULT_CONFIG, CommandPlanner, FirstRunDialog, FirstRunTutorialDialog, MainWindow, PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER, PROVIDER_OPTIONS, SPEECH_RECOGNITION_ROUTE_PLACEHOLDER, VOICE_SYNTHESIS_ROUTE_PLACEHOLDER, is_time_in_window, profile_language_choices, render_greeting_script
+from app import APP_VERSION, DEFAULT_CONFIG, CommandPlanner, FirstRunDialog, FirstRunTutorialDialog, MainWindow, PRIMARY_SYSTEM_LANGUAGE_PLACEHOLDER, PROVIDER_OPTIONS, SPEECH_RECOGNITION_ROUTE_PLACEHOLDER, VOICE_SYNTHESIS_ROUTE_PLACEHOLDER, is_time_in_window, profile_language_choices, render_greeting_script
 
 
 def main():
@@ -37,6 +37,9 @@ def main():
 
     application = QApplication.instance() or QApplication([])
     window = MainWindow()
+    assert APP_VERSION == "0.1.6"
+    assert window.version_label.text() == f"VERSION {APP_VERSION}"
+    assert f"v{APP_VERSION}" in window.windowTitle()
     assert window.nav_list.count() == 16
     assert window.pages.count() == 16
     assert window.nav_labels[0] == "Command desk"

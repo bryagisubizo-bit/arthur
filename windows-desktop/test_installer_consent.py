@@ -39,9 +39,10 @@ class InstallerConsentTests(unittest.TestCase):
     def test_spatial_password_choice_is_retained_as_first_run_setup_intent(self) -> None:
         config = apply_installer_defaults(
             {"voice": {}, "autonomy": {}, "privacy": {}, "integrations": {}, "sensors": {}, "interaction": {}},
-            {"spatial_room_protection": "password"},
+            {"spatial_room_protection": "password", "spatial_room_protection_intent_id": "v0.1.6-password"},
         )
         self.assertEqual(config["interaction"]["installer_spatial_room_protection"], "password")
+        self.assertEqual(config["interaction"]["installer_spatial_room_protection_intent_id"], "v0.1.6-password")
         self.assertEqual(config["interaction"].get("spatial_room_access_method", ""), "")
 
 

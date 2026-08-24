@@ -1,6 +1,6 @@
 #define MyAppName "Arthur"
 #ifndef MyAppVersion
-#define MyAppVersion "0.1.0"
+#define MyAppVersion "0.1.6"
 #endif
 #define MyAppPublisher "Bogitech"
 #define MyAppExeName "Arthur.exe"
@@ -127,7 +127,8 @@ begin
       '  "network_provider_setup": ' + ChoiceValue(3) + ',' + #13#10 +
       '  "reviewed_pc_actions": ' + ChoiceValue(4) + ',' + #13#10 +
       '  "local_sensor_diagnostics": ' + ChoiceValue(5) + ',' + #13#10 +
-      '  "spatial_room_protection": "' + SpatialProtectionValue + '"' + #13#10 +
+      '  "spatial_room_protection": "' + SpatialProtectionValue + '",' + #13#10 +
+      '  "spatial_room_protection_intent_id": "' + '{#MyAppVersion}-' + GetDateTimeString('yyyymmddhhnnsszzz', '-', ':') + '"' + #13#10 +
       '}';
     SaveStringToFile(ConsentFile, Content, False);
   end;

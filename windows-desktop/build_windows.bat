@@ -56,9 +56,9 @@ echo Compiling the installer with Inno Setup ...
 "%ISCC%" "installer\ArthurSetup.iss"
 if errorlevel 1 goto :build_failed
 
-if exist "installer\output\ArthurSetup-0.1.0.exe" (
+if exist "installer\output\ArthurSetup-0.1.6.exe" (
   echo.
-  echo SUCCESS: installer\output\ArthurSetup-0.1.0.exe is ready to install.
+  echo SUCCESS: installer\output\ArthurSetup-0.1.6.exe is ready to install.
 ) else (
   echo Inno Setup finished but the expected installer file was not found.
   goto :build_failed

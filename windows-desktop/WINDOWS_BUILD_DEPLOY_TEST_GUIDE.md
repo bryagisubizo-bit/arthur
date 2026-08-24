@@ -22,7 +22,7 @@ Run the build on Windows. PyInstaller bundles an application with its dependenci
 | 1 | Copy the credential-free Arthur source bundle to a Windows 11 development machine and extract it, for example as `C:\Arthur`. | The source tree contains `app.py`, `requirements.txt`, `build_windows.bat`, and `installer\ArthurSetup.iss`. |
 | 2 | Install Python 3.12 (64-bit) and Inno Setup. | Python is available from Command Prompt; Inno Setup provides the installer compiler. |
 | 3 | Open **Command Prompt** in `C:\Arthur` and run `build_windows.bat`. | Arthur creates or reuses `.venv`, installs the declared dependencies, runs every `test_*.py` regression, and then PyInstaller creates `dist\Arthur\Arthur.exe`. |
-| 4 | If Inno Setup 7 or 6 is installed, wait for the script to invoke `ISCC.exe` automatically. If it is not found, open `installer\ArthurSetup.iss` in Inno Setup Compiler and select **Build → Compile**. | Inno Setup creates `installer\output\ArthurSetup-0.1.0.exe`. |
+| 4 | If Inno Setup 7 or 6 is installed, wait for the script to invoke `ISCC.exe` automatically. If it is not found, open `installer\ArthurSetup.iss` in Inno Setup Compiler and select **Build → Compile**. | Inno Setup creates `installer\output\ArthurSetup-0.1.6.exe`. |
 | 5 | Install only on a disposable test environment first. | The installer creates Start Menu and optional desktop shortcuts without carrying a developer secret. |
 
 Inno Setup supports 64-bit Windows applications, produces a single installation executable, and supports uninstall and code-signing workflows.[2] Before distribution, code-sign the final installer if you have a code-signing certificate; the signed installer should be the artifact given to users.

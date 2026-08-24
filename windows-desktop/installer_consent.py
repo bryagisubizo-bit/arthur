@@ -36,6 +36,8 @@ def normalise_installer_consent(payload: Any) -> dict[str, bool | str]:
     normalised: dict[str, bool | str] = {key: bool(source.get(key, False)) for key in CONSENT_KEYS}
     selected = source.get("spatial_room_protection", "")
     normalised["spatial_room_protection"] = selected if selected in SPATIAL_PROTECTION_METHODS else ""
+    intent_id = source.get("spatial_room_protection_intent_id", "")
+    normalised["spatial_room_protection_intent_id"] = str(intent_id).strip()[:120] if isinstance(intent_id, str) else ""
     return normalised
 
 
@@ -77,6 +79,7 @@ def apply_installer_defaults(config: dict[str, Any], consent: dict[str, bool | s
     # camera access still needs separate visible enrolment. Arthur uses it only
     # to take the user to the selected setup flow on the first room entry.
     interaction["installer_spatial_room_protection"] = choices["spatial_room_protection"]
+    interaction["installer_spatial_room_protection_intent_id"] = choices["spatial_room_protection_intent_id"]
 
     # This enables only an in-app local reading surface selected in the wizard.
     # It grants no Windows permission, starts no background service, and sends no telemetry.

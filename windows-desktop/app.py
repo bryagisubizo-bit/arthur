@@ -92,6 +92,7 @@ from PySide6.QtWidgets import (
 
 APP_NAME = "Arthur"
 APP_PUBLISHER = "Bogitech"
+APP_VERSION = "0.1.6"
 BASE_DIR = Path(__file__).resolve().parent
 # An installed application cannot rely on write access to Program Files.  Keep
 # user settings and the installer consent record in the current user's AppData.
@@ -406,6 +407,8 @@ DEFAULT_CONFIG = {
         "monitor_placement_enabled": False,
         "spatial_room_hello_enabled": False,
         "spatial_room_access_method": "",
+        "installer_spatial_room_protection": "",
+        "installer_spatial_room_protection_intent_id": "",
         "spatial_room_face_camera_index": 0,
         "spatial_room_face_audio_cues": False,
     },
@@ -433,6 +436,33 @@ DEFAULT_CONFIG = {
 }
 
 
+def refresh_installer_spatial_intent(config, consent):
+    """Apply only a newly written installer Spatial Room choice to an existing profile.
+
+    An installer choice is a first-entry route, not proof that a password, Windows
+    Hello, or a local face template is usable. When the installer writes a fresh
+    intent identifier, clearing a stale active method ensures that the new explicit
+    choice is shown before any existing optional face route can run. Password
+    verifiers and face templates are deliberately retained; changing the selected
+    route never silently destroys either local recovery material.
+    """
+    updated = apply_installer_defaults(config, consent)
+    choice = str(consent.get("spatial_room_protection", ""))
+    intent_id = str(consent.get("spatial_room_protection_intent_id", ""))
+    interaction = updated.setdefault("interaction", {})
+    previous_intent_id = str(config.get("interaction", {}).get("installer_spatial_room_protection_intent_id", ""))
+
+    if choice and intent_id and intent_id != previous_intent_id:
+        interaction["spatial_room_access_method"] = ""
+        interaction["spatial_room_hello_enabled"] = False
+        interaction["spatial_room_pending_setup_intent_id"] = intent_id
+        interaction["spatial_room_pending_setup_message"] = (
+            "Your latest installer selection is ready to complete. "
+            "For local password, Arthur will only request password creation; no camera adapter is needed."
+        )
+    return updated
+
+
 def load_config():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     if CONFIG_FILE.exists():
@@ -445,7 +475,10 @@ def load_config():
                     merged[key].update(value)
                 else:
                     merged[key] = value
-            return merged
+            refreshed = refresh_installer_spatial_intent(merged, load_installer_consent(INSTALLER_CONSENT_FILE))
+            if refreshed != merged:
+                save_config(refreshed)
+            return refreshed
         except (OSError, json.JSONDecodeError):
             pass
     defaults = json.loads(json.dumps(DEFAULT_CONFIG))
@@ -1715,6 +1748,7 @@ class SpatialWorkspacePage(QWidget):
                 delete_face_enrollment()
             self.config.setdefault("interaction", {})["spatial_room_access_method"] = "windows_hello"
             self.config["interaction"]["spatial_room_hello_enabled"] = True
+            self.config["interaction"].pop("spatial_room_pending_setup_intent_id", None)
             self.save_callback()
             QMessageBox.information(self, "Windows Hello selected", "Windows Hello is now required for the protected Spatial room. Arthur did not collect face data and no room password is required.")
             self.update_access_state()
@@ -1765,6 +1799,7 @@ class SpatialWorkspacePage(QWidget):
             self.config.setdefault("interaction", {})["spatial_room_access_method"] = "local_camera_face"
             self.config["interaction"]["spatial_room_face_camera_index"] = camera_index
             self.config["interaction"]["spatial_room_hello_enabled"] = False
+            self.config["interaction"].pop("spatial_room_pending_setup_intent_id", None)
             self.save_callback()
             QMessageBox.information(self, "Local camera face access selected", detail)
             self.update_access_state()
@@ -1779,12 +1814,12 @@ class SpatialWorkspacePage(QWidget):
         if not ok:
             QMessageBox.warning(self, "Password not saved", detail)
             return
-        if self.selected_access_method() == "local_camera_face":
-            delete_face_enrollment()
         self.config.setdefault("interaction", {})["spatial_room_access_method"] = "password"
         self.config["interaction"]["spatial_room_hello_enabled"] = False
+        self.config["interaction"].pop("spatial_room_pending_setup_intent_id", None)
+        self.config["interaction"].pop("spatial_room_pending_setup_message", None)
         self.save_callback()
-        QMessageBox.information(self, "Password access selected", detail)
+        QMessageBox.information(self, "Password access selected", f"{detail}\n\nNo local camera adapter or face enrolment is needed for password access.")
         self.update_access_state()
         if preferred_method == "password":
             self.unlock_room("Local password created and verified for this Arthur session.")
@@ -1792,6 +1827,17 @@ class SpatialWorkspacePage(QWidget):
     def request_access(self):
         if self.session_unlocked:
             return True
+        pending_installer_method = self.pending_installer_access_method()
+        if pending_installer_method:
+            display_name = {
+                "password": "local password",
+                "windows_hello": "Windows Hello",
+                "local_camera_face": "local camera face access",
+            }[pending_installer_method]
+            extra = " Local password setup never checks for a camera adapter or face-enrolment dependency." if pending_installer_method == "password" else ""
+            QMessageBox.information(self, "Complete latest Spatial Room setup", f"Your latest installer selection is {display_name}. Arthur will complete that selected local setup first.{extra}")
+            self.configure_access(preferred_method=pending_installer_method)
+            return self.session_unlocked
         method = self.selected_access_method()
         if not method:
             installer_method = self.installer_selected_access_method()
@@ -1801,7 +1847,8 @@ class SpatialWorkspacePage(QWidget):
                     "windows_hello": "Windows Hello",
                     "local_camera_face": "local camera face access",
                 }[installer_method]
-                QMessageBox.information(self, "Complete Spatial Room setup", f"During installation, you selected {display_name} for the protected Spatial Room. Arthur will now guide you through the required local setup. Nothing is enabled until you complete it.")
+                extra = " Local password setup never checks for a camera adapter or face-enrolment dependency." if installer_method == "password" else ""
+                QMessageBox.information(self, "Complete Spatial Room setup", f"During installation, you selected {display_name} for the protected Spatial Room. Arthur will now guide you through the required local setup. Nothing is enabled until you complete it.{extra}")
                 self.configure_access(preferred_method=installer_method)
                 return self.session_unlocked
             QMessageBox.information(self, "Choose access first", "Choose local password, Windows Hello, or experimental local camera face access before opening this protected room.")
@@ -1912,6 +1959,14 @@ class SpatialWorkspacePage(QWidget):
         """Return only the local first-run protection intent written by the installer."""
         method = self.config.get("interaction", {}).get("installer_spatial_room_protection", "")
         return method if method in {"password", "windows_hello", "local_camera_face"} else ""
+
+    def pending_installer_access_method(self):
+        """Return only an explicitly queued installer method that has not been completed."""
+        interaction = self.config.get("interaction", {})
+        selected = self.installer_selected_access_method()
+        intent_id = str(interaction.get("installer_spatial_room_protection_intent_id", ""))
+        pending_id = str(interaction.get("spatial_room_pending_setup_intent_id", ""))
+        return selected if selected and intent_id and intent_id == pending_id else ""
 
     def recover_face_access(self):
         if self.selected_access_method() != "local_camera_face":
@@ -4014,7 +4069,7 @@ class MainWindow(QMainWindow):
             pitch=saved_voice.get("pitch", 0),
         )
         self.voice_studio = None
-        self.setWindowTitle("Arthur — Desktop AI Assistant")
+        self.setWindowTitle(f"Arthur v{APP_VERSION} — Desktop AI Assistant")
         self.setWindowIcon(QIcon(str(bundled_path("assets/arthur_hawk.ico"))))
         self.setMinimumSize(1240, 800)
         self.build_ui()
@@ -4088,6 +4143,10 @@ class MainWindow(QMainWindow):
         topbar_copy.addWidget(self.workspace_title)
         topbar_layout.addLayout(topbar_copy)
         topbar_layout.addStretch()
+        self.version_label = QLabel(f"VERSION {APP_VERSION}")
+        self.version_label.setObjectName("versionLabel")
+        self.version_label.setToolTip(f"Arthur desktop release v{APP_VERSION}")
+        topbar_layout.addWidget(self.version_label)
         readiness = QLabel("● CONSENT GATES ACTIVE")
         readiness.setObjectName("topbarStatus")
         topbar_layout.addWidget(readiness)
@@ -4379,6 +4438,7 @@ def apply_theme(app, appearance=None):
         #pageTitle {{ color: #f3f8ff; font-size: 28px; font-weight: 700; }}
         #topbarTitle {{ color: #eff7ff; font-size: 19px; font-weight: 700; }}
         #topbar {{ border-bottom: 1px solid #173151; }}
+        #versionLabel {{ color: #9ad9ff; background: #102a47; border: 1px solid #2c628d; border-radius: 12px; padding: 6px 10px; font-size: 10px; font-weight: 700; letter-spacing: 1px; }}
         #topbarStatus {{ color: #74e5ad; background: #0d2926; border: 1px solid #1f655b; border-radius: 12px; padding: 6px 10px; font-size: 10px; font-weight: 700; }}
         #dialogTitle {{ color: #a8e7ff; font-size: 20px; font-weight: 600; }}
         #muted {{ color: #8aa6c1; }}

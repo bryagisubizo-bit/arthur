@@ -435,3 +435,10 @@
 - [x] Add application-selection, scoped inspection, navigation-plan preview, approval, execution-readiness, emergency-stop, and activity-record controls in the desktop and browser Spatial Workspace.
 - [x] Enforce per-app user approval and separate confirmation for click, typing, clipboard, file-selection, communication, and any data sharing; actions remain unexecuted until their explicit approval.
 - [x] Add regression coverage, credentials/privacy documentation, synchronized release workspace source, and publish the verified next Windows installer release.
+
+## Spatial Room Password Priority & Version Header Repair
+
+- [x] Fix persisted Spatial Room protection selection so `password` always routes to password creation or verification and never falls through to the optional local camera-face setup.
+- [x] Add a clear Arthur application version indicator in the desktop top header and ensure its value is sourced from one maintained release-version constant.
+- [x] Add regression coverage for installer-selected password versus face-access setup paths, including a guarantee that the password route does not check for `cv2`.
+- [ ] Synchronize the corrected desktop source, validate the Windows release workspace, and publish the verified corrected installer release.
