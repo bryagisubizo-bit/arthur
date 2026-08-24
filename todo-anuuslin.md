@@ -8,3 +8,5 @@
 - [x] Align production or installed-build styles and asset loading with the live preview.
 - [x] Add or update focused automated tests for the changed behavior and run the affected desktop regression suite.
 - [x] Verify the interface visually and save a versioned checkpoint.
+- [x] Add an animated loading state and disable duplicate actions while GitHub release checks are in progress.
+- [x] Test the release-check loading state and save a versioned checkpoint.

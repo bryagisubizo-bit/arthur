@@ -4,6 +4,7 @@ from datetime import datetime
 import shutil
 import subprocess
 import sys
+from threading import Thread
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, Qt, QTime, QTimer, Signal, QUrl
@@ -49,6 +50,7 @@ from cloud_gateway import gateway_status as cloud_gateway_status, review_text as
 from application_bridge import action_readiness as app_bridge_action_readiness, approve_scope as approve_app_scope, bridge_status as app_bridge_status, create_scope as create_app_scope, emergency_stop as app_bridge_emergency_stop, optional_dependency_status as app_bridge_dependency_status, prepare_navigation_plan as prepare_app_navigation_plan
 from api_layer import API_LAYER_ROOM, api_layer_status
 from runtime_assets import packaged_runtime_readiness
+from release_check_loading import release_check_loading_text
 from voice_runtime import VoiceRuntime, available_input_devices, diagnose_wake_word, microphone_readiness, test_microphone_activity
 from voice_synthesis import ROUTES as VOICE_SYNTHESIS_ROUTES, describe_route as describe_synthesis_route
 from windows_hello import availability as windows_hello_availability, verify as verify_windows_hello
@@ -3977,11 +3979,20 @@ class CustomIntegrationDialog(QDialog):
 class UpdatesPage(QWidget):
     """Manual GitHub release metadata checks; never background polling or downloading."""
 
+    release_check_complete = Signal(dict)
+
     def __init__(self, config, save_callback, tutorial_callback=None, parent=None):
         super().__init__(parent)
         self.config = config
         self.save_callback = save_callback
         self.tutorial_callback = tutorial_callback
+        self._release_check_in_progress = False
+        self._release_loading_frame = 0
+        self._release_check_thread = None
+        self.release_loading_timer = QTimer(self)
+        self.release_loading_timer.setInterval(240)
+        self.release_loading_timer.timeout.connect(self.advance_release_loading_frame)
+        self.release_check_complete.connect(self.handle_release_check_result)
         layout = QVBoxLayout(self)
         title = QLabel("Updates")
         title.setObjectName("pageTitle")
@@ -4017,18 +4028,23 @@ class UpdatesPage(QWidget):
         self.check_status.setObjectName("safetyBoundary")
         self.check_status.setWordWrap(True)
         release_layout.addRow(self.check_status)
+        self.release_loading = QLabel()
+        self.release_loading.setObjectName("releaseCheckLoading")
+        self.release_loading.setWordWrap(True)
+        self.release_loading.setVisible(False)
+        release_layout.addRow("Check activity:", self.release_loading)
         layout.addWidget(release_group)
 
         actions = QHBoxLayout()
-        save_button = QPushButton("Save update source")
-        save_button.clicked.connect(self.save)
-        check_button = QPushButton("Check GitHub Releases now")
-        check_button.setObjectName("primaryButton")
-        check_button.clicked.connect(self.check_now)
+        self.save_button = QPushButton("Save update source")
+        self.save_button.clicked.connect(self.save)
+        self.check_button = QPushButton("Check GitHub Releases now")
+        self.check_button.setObjectName("primaryButton")
+        self.check_button.clicked.connect(self.check_now)
         tutorial_button = QPushButton("Show first-run tutorial")
         tutorial_button.clicked.connect(self.show_tutorial)
-        actions.addWidget(save_button)
-        actions.addWidget(check_button)
+        actions.addWidget(self.save_button)
+        actions.addWidget(self.check_button)
         actions.addStretch()
         actions.addWidget(tutorial_button)
         layout.addLayout(actions)
@@ -4064,6 +4080,8 @@ class UpdatesPage(QWidget):
         return True
 
     def check_now(self):
+        if self._release_check_in_progress:
+            return
         if not self.save(show_notice=False):
             return
         choice = QMessageBox.question(
@@ -4075,7 +4093,52 @@ class UpdatesPage(QWidget):
         )
         if choice != QMessageBox.StandardButton.Yes:
             return
-        result = fetch_latest_release(self.repository.text(), get_secret("Updates"))
+        self.start_release_check()
+
+    def start_release_check(self):
+        """Run the one approved metadata request without freezing the Qt event loop."""
+        self._set_release_check_busy(True)
+        repository = self.repository.text()
+        token = get_secret("Updates")
+        self._release_check_thread = Thread(
+            target=self.fetch_release_metadata,
+            args=(repository, token),
+            name="ArthurGitHubReleaseCheck",
+            daemon=True,
+        )
+        self._release_check_thread.start()
+
+    def fetch_release_metadata(self, repository, token):
+        try:
+            result = fetch_latest_release(repository, token)
+        except Exception as error:  # pragma: no cover - defensive boundary for OS networking failures
+            result = {"ok": False, "message": f"Arthur could not read release metadata: {error}"}
+        self.release_check_complete.emit(result)
+
+    def advance_release_loading_frame(self):
+        self.release_loading.setText(release_check_loading_text(self._release_loading_frame))
+        self._release_loading_frame += 1
+
+    def _set_release_check_busy(self, busy):
+        self._release_check_in_progress = busy
+        self.repository.setEnabled(not busy)
+        self.github_token.setEnabled(not busy)
+        self.save_button.setEnabled(not busy)
+        self.check_button.setEnabled(not busy)
+        self.check_button.setText("Checking GitHub Releases…" if busy else "Check GitHub Releases now")
+        self.asset_choice.setEnabled(not busy and bool(self.release_record and self.release_record.get("assets")))
+        self.download_button.setEnabled(not busy and bool(self.release_record and self.release_record.get("assets")))
+        self.release_loading.setVisible(busy)
+        if busy:
+            self._release_loading_frame = 0
+            self.advance_release_loading_frame()
+            self.release_loading_timer.start()
+            self.check_status.setText("Arthur is checking GitHub release metadata. No asset will be downloaded, installed, or retried automatically.")
+        else:
+            self.release_loading_timer.stop()
+
+    def handle_release_check_result(self, result):
+        self._set_release_check_busy(False)
         if not result.get("ok"):
             self.check_status.setText(result.get("message", "Arthur could not read release metadata. No update was downloaded."))
             return
@@ -4616,6 +4679,7 @@ def apply_theme(app, appearance=None):
         #statusOn {{ color: #70e6a6; font-weight: 700; }}
         #statusOff {{ color: #7b94aa; }}
         #statusWarn {{ color: #ffc76b; font-weight: 700; }}
+        #releaseCheckLoading {{ color: {glow}; font-weight: 700; letter-spacing: 1px; }}
         QScrollArea, #workspaceScroll, #apiVaultScroll {{ border: none; background: transparent; }}
         QScrollBar:vertical {{ background: #07111f; width: 10px; margin: 0; }}
         QScrollBar::handle:vertical {{ background: #234a70; min-height: 30px; border-radius: 5px; }}
